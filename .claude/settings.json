@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "codex exec --model gpt-5.5 --ask-for-approval never --sandbox read-only \"leia /docs/PLAN.md e procure pelo implementation plan. Será seu guia para a atividade de code-review. Revise se o código implementado está aderente ao PLAN.md. Crie testes para analisar cada parte. Faça um resumo da sua análise (incluindo executados, divergências, riscos e sugestões) em português e salve as informações em CODE-REVIEW.md.\"",
+            "command": "codex exec --model gpt-5.5 -c approval_policy=never --sandbox read-only \"leia /docs/PLAN.md e procure pelo implementation plan. Será seu guia para a atividade de code-review. Revise se o código implementado está aderente ao PLAN.md. Crie testes para analisar cada parte. Faça um resumo da sua análise (incluindo executados, divergências, riscos e sugestões) em português e salve as informações em CODE-REVIEW.md.\"",
             "async": false
           }
         ]

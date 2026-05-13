@@ -41,7 +41,7 @@ import time
 
 # Ainda nada novo. Se a minha lógica bater a da IA, eu substituo o algoritmo central
 
-versao = "12.3.1"
+versao = "13"
 
 """### Funções Gerais e Administrativas"""
 
