@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROBUSTA — Plano de implementação do rebuild modular</title>
+  <style>
+    :root {
+      --ivory:    #FAF9F5;
+      --slate:    #141413;
+      --clay:     #D97757;
+      --oat:      #E3DACC;
+      --olive:    #788C5D;
+      --gray-150: #F0EEE6;
+      --gray-300: #D1CFC5;
+      --gray-500: #87867F;
+      --gray-700: #3D3D3A;
+      --white:    #FFFFFF;
+
+      --serif: ui-serif, Georgia, 'Times New Roman', serif;
+      --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--ivory);
+      color: var(--gray-700);
+      line-height: 1.55;
+      padding: 56px 32px 120px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page { max-width: 1120px; margin: 0 auto; }
+
+    /* ---------- header ---------- */
+
+    header.page-head { margin-bottom: 48px; max-width: 860px; }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 38px;
+      line-height: 1.15;
+      color: var(--slate);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .lede { font-size: 15.5px; color: var(--gray-700); margin-bottom: 18px; max-width: 760px; }
+
+    .prompt-box {
+      background: var(--gray-150);
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      padding: 16px 20px;
+      font-size: 14.5px;
+      color: var(--gray-700);
+    }
+    .prompt-box .label {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    /* ---------- section chrome ---------- */
+
+    section { margin-bottom: 64px; }
+
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .sec-head .num {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--oat);
+      color: var(--slate);
+      padding: 3px 9px;
+      border-radius: 8px;
+    }
+    .sec-head h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 26px;
+      color: var(--slate);
+      letter-spacing: -0.01em;
+    }
+    .sec-intro {
+      font-size: 14.5px;
+      color: var(--gray-500);
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: var(--gray-150);
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    /* ---------- summary strip ---------- */
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 64px;
+    }
+    @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+    .summary .cell {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .summary .k {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      margin-bottom: 6px;
+    }
+    .summary .v {
+      font-size: 17px;
+      color: var(--slate);
+      font-weight: 600;
+    }
+    .summary .v.accent { color: var(--clay); }
+    .summary .sub { font-size: 12px; color: var(--gray-500); font-weight: 400; margin-top: 2px; }
+
+    /* ---------- milestone timeline ---------- */
+
+    .milestones { display: flex; flex-direction: column; gap: 0; }
+    .milestone {
+      display: grid;
+      grid-template-columns: 96px 28px 1fr;
+      gap: 0 18px;
+      position: relative;
+    }
+    .milestone .when {
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+      padding-top: 4px;
+    }
+    .milestone .dot-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .milestone .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--clay);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .milestone .dot.done { background: var(--olive); border-color: var(--olive); }
+    .milestone .line {
+      width: 2px;
+      flex: 1;
+      background: var(--gray-300);
+      margin: 4px 0;
+    }
+    .milestone:last-child .line { display: none; }
+    .milestone .body { padding-bottom: 36px; }
+    .milestone .body h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 19px;
+      color: var(--slate);
+      margin-bottom: 4px;
+    }
+    .milestone .body p { font-size: 14px; color: var(--gray-500); margin-bottom: 10px; max-width: 640px; }
+    .milestone .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+    .milestone .tag {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      background: var(--gray-150);
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      padding: 3px 8px;
+      color: var(--gray-700);
+    }
+    .milestone .tag.state {
+      background: var(--white);
+      color: var(--gray-500);
+    }
+
+    /* ---------- data flow diagram ---------- */
+
+    .diagram {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      padding: 28px;
+      overflow-x: auto;
+    }
+    .diagram svg { display: block; min-width: 760px; }
+    .diagram text { font-family: var(--mono); }
+    .caption { font-size: 13px; color: var(--gray-500); margin-top: 12px; }
+
+    /* ---------- code panel ---------- */
+
+    .code-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+    @media (max-width: 980px) { .code-grid { grid-template-columns: 1fr; } }
+    .code-block { display: flex; flex-direction: column; gap: 10px; }
+    .code-block .file-label {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+    }
+    .code {
+      background: var(--slate);
+      border-radius: 12px;
+      padding: 18px 20px;
+      overflow-x: auto;
+      flex: 1;
+    }
+    .code pre {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.65;
+      color: #E8E6DE;
+      white-space: pre;
+    }
+    .code .kw  { color: var(--clay); }
+    .code .str { color: var(--olive); }
+    .code .cm  { color: var(--gray-500); }
+    .code .fn  { color: #C9B98A; }
+
+    /* ---------- tables (changes + risks) ---------- */
+
+    .grid-table {
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--white);
+    }
+    .grid-table .row {
+      display: grid;
+      grid-template-columns: 1.5fr 80px 1.9fr;
+      gap: 0;
+    }
+    @media (max-width: 780px) { .grid-table .row { grid-template-columns: 1fr; } }
+    .grid-table .row + .row { border-top: 1.5px solid var(--gray-300); }
+    .grid-table .cell { padding: 14px 18px; font-size: 13.5px; }
+    .grid-table .cell + .cell { border-left: 1.5px solid var(--gray-300); }
+    @media (max-width: 780px) { .grid-table .cell + .cell { border-left: none; border-top: 1px dashed var(--gray-300); } }
+    .grid-table .head { background: var(--gray-150); font-weight: 600; color: var(--slate); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .grid-table .cell strong { color: var(--slate); }
+    .ref { font-family: var(--mono); font-size: 11px; color: var(--gray-500); }
+
+    .sev {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .sev.high { background: #F3D9CC; color: #8A3B1E; }
+    .sev.med  { background: var(--oat); color: var(--slate); }
+    .sev.low  { background: #E4E9DC; color: #4B5C39; }
+
+    /* ---------- "not changed" note ---------- */
+
+    .note {
+      background: var(--gray-150);
+      border: 1.5px solid var(--gray-300);
+      border-left: 4px solid var(--olive);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 24px;
+      font-size: 13.5px;
+      color: var(--gray-700);
+    }
+    .note .nt { font-weight: 600; color: var(--slate); margin-bottom: 6px; }
+    .note ul { margin: 6px 0 0 18px; }
+    .note li { margin-bottom: 4px; }
+
+    /* ---------- open questions ---------- */
+
+    .open-q { display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+    .q {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-left: 4px solid var(--clay);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .q .qt { font-weight: 600; font-size: 15px; color: var(--slate); margin-bottom: 4px; }
+    .q .qd { font-size: 13.5px; color: var(--gray-500); }
+    .q .qd .opt { color: var(--gray-700); }
+    .q .owner {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--gray-500);
+      margin-top: 8px;
+    }
+
+    footer {
+      border-top: 1.5px solid var(--gray-300);
+      padding-top: 18px;
+      font-size: 12.5px;
+      color: var(--gray-500);
+      max-width: 860px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <header class="page-head">
+      <div class="eyebrow">Plano de implementação · ROBUSTA 13 — Reborn Stronger</div>
+      <h1>Rebuild modular do <code>main.py</code> em pipeline + JSON + API</h1>
+      <p class="lede">
+        Este documento traduz <code>planning/PLAN.md</code> em uma vista navegável: as 8 fases do rebuild,
+        o fluxo de dados de ponta a ponta, e o que mudou no plano depois da revisão adversarial.
+        Objetivo: você ler em poucos minutos o que vou fazer e onde precisa decidir.
+      </p>
+      <div class="prompt-box">
+        <span class="label">Pedido que originou este documento</span>
+        Analise o <code>ADVERSARIAL_REVIEW.md</code>, aplique no plano só os pontos realmente
+        críticos, e gere um <code>implementation-plan.html</code> inspirado nos modelos de
+        <code>html-effectiveness/</code> para aumentar minha compreensão das atividades e a
+        eficiência das minhas decisões.
+      </div>
+    </header>
+
+    <!-- ============================================================= -->
+
+    <div class="summary">
+      <div class="cell">
+        <div class="k">Fases do rebuild</div>
+        <div class="v accent">5 / 8</div>
+        <div class="sub">Fases 1–5 ✅ · próxima é a Fase 6</div>
+      </div>
+      <div class="cell">
+        <div class="k">Funções a portar</div>
+        <div class="v">17 / 17</div>
+        <div class="sub">T1–T7 técnica ✅ · F1–F10 fundamental ✅</div>
+      </div>
+      <div class="cell">
+        <div class="k">Saída final</div>
+        <div class="v">JSON + FastAPI</div>
+        <div class="sub">Excel deixa de ser produto</div>
+      </div>
+      <div class="cell">
+        <div class="k">Correções do review</div>
+        <div class="v accent">9 aplicadas</div>
+        <div class="sub">de 29 brechas listadas</div>
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+
+    <section>
+      <div class="sec-head"><span class="num">01</span><h2>As 8 fases</h2></div>
+      <p class="sec-intro">
+        Rebuild gradual: uma função por vez, cada fase com teste rápido em <code>pytest</code> antes
+        de avançar. A metodologia analítica (pesos, thresholds, nomes de indicadores) é preservada —
+        só bugs técnicos que impedem a intenção do código são corrigidos.
+      </p>
+
+      <div class="milestones">
+        <div class="milestone">
+          <div class="when">Fase 1</div>
+          <div class="dot-col"><span class="dot done"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Baseline de segurança</h3>
+            <p>Congela o <code>main.py</code> atual como referência e produz o baseline reproduzível: schema de colunas (análise estática) em <code>tests/baseline/COLUMN_SCHEMA.md</code> + fixtures sintéticas determinísticas (OHLCV de PRIO3/ASAI3/LREN3 com 260 pregões e HTML mínimo do Fundamentus). Snapshot de valores ao vivo foi descartado porque o legado não roda até o fim — bugs B1/B2/B3 registrados.</p>
+            <div class="tags"><span class="tag">fixtures</span><span class="tag">tests/baseline</span><span class="tag state">[x] concluída</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 2</div>
+          <div class="dot-col"><span class="dot done"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Configuração e IO</h3>
+            <p>Centraliza versão, caminhos, janelas e calendário em <code>robusta/config.py</code>. Encapsula leitura de Excel, Yahoo Finance e Fundamentus em <code>robusta/data.py</code>. Corrige a lógica de cache (raspar só no 1º dia útil), importa <code>YFRateLimitError</code> com retry exponencial e remove o override de universo. <code>carrega_fundamentos</code> recebe o scraper por injeção para ser testável já agora.</p>
+            <div class="tags"><span class="tag">config.py</span><span class="tag">data.py</span><span class="tag state">[x] concluída</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 3</div>
+          <div class="dot-col"><span class="dot done"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Análise técnica · T1–T7</h3>
+            <p>Sete funções portadas, uma por subfase, com checkpoint humano entre elas: <code>crie_variacao</code> (T1), <code>crie_medias_moveis</code> (T2), <code>calcule_volatilidade_anualizada_std</code> (T3, sufixo <code>_std</code> a pedido do usuário), <code>alto_volume_persistente</code> (T4), <code>add_price_concentration_levels_by_me</code> (T5, corrige o bug B1 das 8 colunas <code>*_by_mslf</code>), <code>extrai_cotacoes</code> (T6, remove o debug GOAU3 e delega o retry à Fase 2) e <code>screener</code> (T7, cria o handoff <code>precos_por_ticker</code> que substitui o global <code>data_cache_backtest</code>).</p>
+            <div class="tags"><span class="tag">technical.py</span><span class="tag">7/7 subfases</span><span class="tag state">[x] concluída</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 4</div>
+          <div class="dot-col"><span class="dot done"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Análise fundamentalista · F1–F10</h3>
+            <p>Dez funções portadas em <code>fundamental.py</code>: scraping (<code>puxar_dados</code>, <code>formatar_tabela</code>), indicadores extras consumindo o handoff <code>precos_por_ticker</code>, rankings em decil, <code>avaliacao_fundamentalista</code>, ranking setorial, sinal e o orquestrador <code>adicione_indicadores_e_ranking</code> + scraper de lista <code>varre_lista</code>. Correções aplicadas: bug B2 (chave <code>Ticker</code>), <code>.fillna(0)</code> atribuído, <code>qcut</code> protegido contra empates, e as duas funções <code>menor_melhor</code> unificadas.</p>
+            <div class="tags"><span class="tag">fundamental.py</span><span class="tag">10/10 subfases</span><span class="tag state">[x] concluída</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 5</div>
+          <div class="dot-col"><span class="dot done"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Pipeline consolidado</h3>
+            <p>Orquestra técnica + fundamental + merge + ranking cross-sectional num único <code>RunResult</code> via <code>executa_pipeline</code>. Passa <code>precos_por_ticker</code> de forma explícita e preserva <code>{média, std_vol}</code> no <code>summary</code>. Inclui <code>distorions_analysys</code> e <code>distorted_price_analysis</code> (fórmula <code>distortion_ranking</code> com dois bugs corrigidos a pedido do usuário). O <code>RunResult</code> segura os DataFrames; a serialização JSON fica para a Fase 6.</p>
+            <div class="tags"><span class="tag">pipeline.py</span><span class="tag">RunResult</span><span class="tag state">[x] concluída</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 6</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Persistência JSON</h3>
+            <p>Serializa o <code>RunResult</code> com encoder customizado (numpy, Timestamp, <code>NaN → null</code>), grava run por <code>run_id</code> e atualiza <code>latest.json</code>. Execução degenerada não atualiza o <code>latest.json</code>.</p>
+            <div class="tags"><span class="tag">persistence.py</span><span class="tag">latest.json</span><span class="tag state">[ ] não iniciada</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 7</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>API FastAPI</h3>
+            <p>Serve os JSON gravados em modo somente-leitura: <code>/api/health</code>, <code>/api/runs</code>, <code>/api/runs/latest</code>, <code>/api/tickers/{ticker}</code>, <code>/api/signals</code>. Bind em <code>127.0.0.1</code>, CORS restrito a localhost.</p>
+            <div class="tags"><span class="tag">api.py</span><span class="tag">read-only</span><span class="tag state">[ ] não iniciada</span></div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <div class="when">Fase 8</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Limpeza de execução</h3>
+            <p><code>main.py</code> vira só CLI (<code>run</code> / <code>api</code> / <code>schedule</code>). Remove overrides de debug, <code>send_whatsapp_messages</code> e credenciais Twilio. Logs substituem prints.</p>
+            <div class="tags"><span class="tag">main.py CLI</span><span class="tag">sem Twilio</span><span class="tag state">[ ] não iniciada</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+
+    <section>
+      <div class="sec-head"><span class="num">02</span><h2>Fluxo de dados</h2></div>
+      <p class="sec-intro">
+        Duas fontes alimentam dois blocos de análise; o pipeline funde tudo num <code>RunResult</code>,
+        que vira JSON em disco. A API só lê esses arquivos — nunca recalcula. A linha tracejada é o
+        handoff <code>precos_por_ticker</code>: a técnica entrega os preços que a fundamentalista consome.
+      </p>
+
+      <div class="diagram">
+        <svg viewBox="0 0 860 300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#87867F"/>
+            </marker>
+            <marker id="arrowClay" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="#D97757"/>
+            </marker>
+          </defs>
+
+          <!-- boxes -->
+          <g font-size="11.5" fill="#141413">
+            <rect x="20" y="24" width="190" height="56" rx="10" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+            <text x="115" y="47" text-anchor="middle" font-weight="600">Excel universo + Yahoo</text>
+            <text x="115" y="64" text-anchor="middle" fill="#87867F" font-size="10">lista_tickers · cotações</text>
+
+            <rect x="20" y="150" width="190" height="56" rx="10" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+            <text x="115" y="173" text-anchor="middle" font-weight="600">Excel cache + Fundamentus</text>
+            <text x="115" y="190" text-anchor="middle" fill="#87867F" font-size="10">scraping no 1º dia útil</text>
+
+            <rect x="250" y="24" width="180" height="56" rx="10" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+            <text x="340" y="47" text-anchor="middle" font-weight="600">Bloco técnico</text>
+            <text x="340" y="64" text-anchor="middle" fill="#87867F" font-size="10">T1–T7 · technical.py</text>
+
+            <rect x="250" y="150" width="180" height="56" rx="10" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+            <text x="340" y="173" text-anchor="middle" font-weight="600">Bloco fundamentalista</text>
+            <text x="340" y="190" text-anchor="middle" fill="#87867F" font-size="10">F1–F10 · fundamental.py</text>
+
+            <rect x="470" y="82" width="170" height="86" rx="10" fill="#FFFFFF" stroke="#D97757" stroke-width="1.5"/>
+            <text x="555" y="118" text-anchor="middle" font-weight="600">Pipeline</text>
+            <text x="555" y="135" text-anchor="middle" fill="#87867F" font-size="10">merge + ranking</text>
+            <text x="555" y="151" text-anchor="middle" fill="#87867F" font-size="10">→ RunResult</text>
+
+            <rect x="680" y="24" width="160" height="56" rx="10" fill="#141413" stroke="#141413"/>
+            <text x="760" y="47" text-anchor="middle" font-weight="600" fill="#FAF9F5">JSON + latest.json</text>
+            <text x="760" y="64" text-anchor="middle" fill="#C9B98A" font-size="10">persistence.py</text>
+
+            <rect x="680" y="115" width="160" height="56" rx="10" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+            <text x="760" y="138" text-anchor="middle" font-weight="600">FastAPI</text>
+            <text x="760" y="155" text-anchor="middle" fill="#87867F" font-size="10">/api/* · só leitura</text>
+
+            <rect x="680" y="206" width="160" height="56" rx="10" fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+            <text x="760" y="229" text-anchor="middle" font-weight="600">HTML (futuro)</text>
+            <text x="760" y="246" text-anchor="middle" fill="#87867F" font-size="10">consome só JSON</text>
+          </g>
+
+          <!-- solid arrows -->
+          <g stroke="#87867F" stroke-width="1.5" fill="none">
+            <path d="M210 52 L250 52" marker-end="url(#arrow)"/>
+            <path d="M210 178 L250 178" marker-end="url(#arrow)"/>
+            <path d="M430 56 C 450 70, 452 92, 470 104" marker-end="url(#arrow)"/>
+            <path d="M430 174 C 450 160, 452 140, 470 128" marker-end="url(#arrow)"/>
+            <path d="M640 104 C 660 88, 662 70, 680 56" marker-end="url(#arrow)"/>
+            <path d="M760 80 L760 115" marker-end="url(#arrow)"/>
+            <path d="M760 171 L760 206" marker-end="url(#arrow)"/>
+          </g>
+
+          <!-- dashed handoff -->
+          <g stroke="#D97757" stroke-width="1.5" fill="none" stroke-dasharray="5 4">
+            <path d="M340 80 L340 150" marker-end="url(#arrowClay)"/>
+          </g>
+
+          <!-- edge labels -->
+          <g font-size="10" fill="#87867F">
+            <text x="215" y="42">universo</text>
+            <text x="215" y="168">fundamentos</text>
+            <text x="640" y="78">RunResult</text>
+            <text x="768" y="102">lê JSON</text>
+            <text x="768" y="193">consome /api</text>
+          </g>
+          <g font-size="10" fill="#D97757">
+            <text x="348" y="118">precos_por_ticker</text>
+          </g>
+        </svg>
+        <p class="caption">Sólido = caminho principal de dados. Tracejado clay = handoff <code>Dict[str, float]</code> ticker→preço entre técnica e fundamentalista.</p>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+
+    <section>
+      <div class="sec-head"><span class="num">03</span><h2>O que mudei no plano após o review</h2></div>
+      <p class="sec-intro">
+        O <code>ADVERSARIAL_REVIEW.md</code> lista 29 brechas. Apliquei só as 9 que permitiriam
+        cumprir a letra do plano violando seu espírito. Cada linha abaixo já está editada em
+        <code>PLAN.md</code>.
+      </p>
+
+      <div class="grid-table">
+        <div class="row">
+          <div class="cell head">Brecha do review</div>
+          <div class="cell head">Sev</div>
+          <div class="cell head">Mudança aplicada</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Referência quebrada</strong> <span class="ref">#3</span><br>Bug catalog apontava para <code>docs/CODE-AND-PLAN-REVIEW.md</code>, que não existe.</div>
+          <div class="cell"><span class="sev high">ALTA</span></div>
+          <div class="cell">A lista de 12 bugs passa a ser declarada como completa na própria seção; sem catálogo externo para "esquecer" itens.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>"Bug vs metodologia" sem fronteira</strong> <span class="ref">#4 #5</span><br>"Corrigir bugs óbvios" e "preservar metodologia" não tinham limite.</div>
+          <div class="cell"><span class="sev high">ALTA</span></div>
+          <div class="cell">Nova subseção <em>Invariantes</em>: 5 regras testáveis definem o que é bug. Mudar peso/threshold/nome de indicador é metodologia e exige pedido explícito.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Checkbox <code>[x]</code> sem evidência</strong> <span class="ref">#7</span><br>Fase podia ser marcada concluída sem rodar teste.</div>
+          <div class="cell"><span class="sev high">ALTA</span></div>
+          <div class="cell">Marcar <code>[x]</code> agora exige registrar comando, resultado, arquivos alterados e limitações. Sem isso a fase fica <code>[~]</code>.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Falhas mascaradas como warnings</strong> <span class="ref">#14</span><br><code>warnings</code> sem limite — <code>latest.json</code> poderia sair com 0 tickers.</div>
+          <div class="cell"><span class="sev high">ALTA</span></div>
+          <div class="cell">Execução degenerada (<code>tickers_ok == 0</code>, coluna obrigatória ausente, falha &gt; 50%) não atualiza <code>latest.json</code> e sai com erro.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>API sem superfície segura</strong> <span class="ref">#15</span><br>"local" não impedia bind em <code>0.0.0.0</code>.</div>
+          <div class="cell"><span class="sev med">MÉDIA</span></div>
+          <div class="cell">Bind padrão fixado em <code>127.0.0.1</code>; API só lê a pasta de runs, sem path arbitrário.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>"Teste rápido" indefinido</strong> <span class="ref">#8</span><br>Sem framework, pasta ou comando obrigatório.</div>
+          <div class="cell"><span class="sev med">MÉDIA</span></div>
+          <div class="cell"><code>pytest</code> obrigatório, testes em <code>tests/</code> como <code>test_*.py</code>, comando único de verificação. REPL não conta.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Baseline humano frágil</strong> <span class="ref">#6</span><br>Fase 1 pedia "comparação humana" de amostra.</div>
+          <div class="cell"><span class="sev med">MÉDIA</span></div>
+          <div class="cell">Fase 1 agora exige snapshot versionado em <code>tests/</code>; fases seguintes comparam coluna a coluna, não por inspeção visual.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Contrato JSON sem versão</strong> <span class="ref">#11</span><br>Mudança de campos passaria despercebida.</div>
+          <div class="cell"><span class="sev low">BAIXA</span></div>
+          <div class="cell">Campo <code>schema_version</code> adicionado ao contrato; incrementa a cada mudança incompatível.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Excel exportado por baixo</strong> <span class="ref">#13</span><br>Excel "não principal" ainda permitia export oculto.</div>
+          <div class="cell"><span class="sev low">BAIXA</span></div>
+          <div class="cell">Export automático de Excel proibido no fluxo normal; só permitido atrás de flag explícita de CLI.</div>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="nt">Deixei deliberadamente sem mudar — não eram críticos para o plano</div>
+        <ul>
+          <li><strong>#1, #2, #23–#29</strong> — tratam de <code>PROJECT_BUILDING.md</code> e do processo, não do plano de rebuild; já figuram como tarefas pendentes lá.</li>
+          <li><strong>#10, #16–#22</strong> — já estão razoavelmente delimitados no plano, ou apertá-los agora seria scope creep (ex.: validação completa do Excel de entrada).</li>
+          <li><strong>#12</strong> — <em>falso positivo</em>: <code>distorions_analysys</code> e <code>distorted_price_analysis</code> são duas funções reais e distintas no <code>main.py</code>, não nomes inconsistentes da mesma coisa.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+
+    <section>
+      <div class="sec-head"><span class="num">04</span><h2>Contrato de saída</h2></div>
+      <p class="sec-intro">
+        As duas peças mais fáceis de errar: a estrutura única que o pipeline devolve (<code>RunResult</code>)
+        e o encoder que a transforma em JSON sem vazar tipos do pandas/numpy.
+      </p>
+
+      <div class="code-grid">
+        <div class="code-block">
+          <div class="file-label">pipeline.py — estrutura devolvida pela Fase 5</div>
+          <div class="code"><pre><span class="kw">from</span> dataclasses <span class="kw">import</span> dataclass
+
+<span class="cm"># campo a campo igual ao JSON do contrato</span>
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="fn">RunResult</span>:
+    schema_version:     int
+    run_id:             str
+    generated_at:       str          <span class="cm"># ISO 8601 UTC</span>
+    robusta_version:    str          <span class="cm"># fonte única: config</span>
+    input_universe:     list
+    summary:            dict         <span class="cm"># inclui std_vol</span>
+    technical_results:  list
+    fundamental_results: list
+    merged_results:     list
+    portfolio_signals:  dict         <span class="cm"># top 5 long / short</span>
+    warnings:           list
+    failed_tickers:     list         <span class="cm"># {ticker, reason}</span></pre></div>
+        </div>
+
+        <div class="code-block">
+          <div class="file-label">persistence.py — encoder JSON (Fase 6)</div>
+          <div class="code"><pre><span class="kw">import</span> json, math
+<span class="kw">import</span> numpy <span class="kw">as</span> np, pandas <span class="kw">as</span> pd
+
+<span class="kw">class</span> <span class="fn">RobustaEncoder</span>(json.JSONEncoder):
+    <span class="kw">def</span> <span class="fn">default</span>(self, o):
+        <span class="kw">if</span> isinstance(o, (np.integer,)):
+            <span class="kw">return</span> int(o)
+        <span class="kw">if</span> isinstance(o, (np.floating,)):
+            <span class="kw">return</span> float(o)
+        <span class="kw">if</span> isinstance(o, pd.Timestamp):
+            <span class="kw">return</span> o.isoformat()
+        <span class="kw">return</span> super().default(o)
+
+<span class="cm"># NaN/None -&gt; null JSON (campo presente, valor null)</span>
+<span class="cm"># execução degenerada NÃO atualiza latest.json</span></pre></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+
+    <section>
+      <div class="sec-head"><span class="num">05</span><h2>Riscos remanescentes</h2></div>
+      <p class="sec-intro">
+        Brechas do review que decidi <em>não</em> fechar agora viram riscos conhecidos. Nenhum bloqueia
+        o início do rebuild, mas convém revisitá-los nas fases indicadas.
+      </p>
+
+      <div class="grid-table">
+        <div class="row">
+          <div class="cell head">Risco</div>
+          <div class="cell head">Sev</div>
+          <div class="cell head">Mitigação / quando tratar</div>
+        </div>
+        <div class="row">
+          <div class="cell">Normalização de ticker incompleta (caixa, espaços, <code>.SA</code> duplicado) pode quebrar o merge silenciosamente. <span class="ref">#19</span></div>
+          <div class="cell"><span class="sev med">MÉDIA</span></div>
+          <div class="cell">Criar uma <code>normalize_ticker()</code> única na Fase 2 e usá-la em todo IO. Decidido se virar problema nas fixtures da Fase 1.</div>
+        </div>
+        <div class="row">
+          <div class="cell">Validação do Excel de entrada confirma só a coluna; valores vazios/duplicados passam. <span class="ref">#18</span></div>
+          <div class="cell"><span class="sev low">BAIXA</span></div>
+          <div class="cell">Validação de schema completa adiada — seria scope creep agora. Reavaliar após a Fase 2.</div>
+        </div>
+        <div class="row">
+          <div class="cell">Estrutura modular é opcional ("pacote ou poucos <code>.py</code>"), abrindo espaço para decomposição arbitrária. <span class="ref">#10</span></div>
+          <div class="cell"><span class="sev low">BAIXA</span></div>
+          <div class="cell">As 7 responsabilidades já estão nomeadas no plano; falta só decidir pacote vs arquivos planos — ver questão aberta abaixo.</div>
+        </div>
+        <div class="row">
+          <div class="cell"><code>POST /api/runs</code> e <code>schedule</code> ficaram "opcionais", sem decisão de escopo. <span class="ref">#16 #17</span></div>
+          <div class="cell"><span class="sev low">BAIXA</span></div>
+          <div class="cell">Manter fora do MVP por padrão; só entram com decisão explícita — ver questões abertas.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+
+    <section>
+      <div class="sec-head"><span class="num">06</span><h2>Decisões que preciso de você</h2></div>
+      <p class="sec-intro">
+        Quatro escolhas que afetam escopo. Marquei minha recomendação em cada uma; se concordar,
+        basta dizer "segue as recomendações" e eu fecho o plano.
+      </p>
+
+      <div class="open-q">
+        <div class="q">
+          <div class="qt">✅ Pacote <code>robusta/</code> ou poucos arquivos <code>.py</code> planos?</div>
+          <div class="qd"><span class="opt">Resolvido na Fase 2:</span> escolhido o pacote <code>robusta/</code> — hoje contém <code>config.py</code>, <code>data.py</code> e <code>technical.py</code> em construção.</div>
+          <div class="owner">Decidido · Fase 2</div>
+        </div>
+        <div class="q">
+          <div class="qt">✅ Validação completa do Excel de entrada — agora ou depois?</div>
+          <div class="qd"><span class="opt">Resolvido na Fase 2:</span> adiada. <code>ler_lista_tickers</code> confirma só a coluna <code>ticker</code>; validação de schema entra como tarefa separada se aparecer dado ruim.</div>
+          <div class="owner">Decidido · Fase 2</div>
+        </div>
+        <div class="q">
+          <div class="qt">O comando <code>schedule</code> entra no MVP?</div>
+          <div class="qd">Hoje aparece como opcional e como comando do CLI ao mesmo tempo. <span class="opt">Recomendo deixá-lo fora do MVP</span>: entregar <code>run</code> + <code>api</code> primeiro e o agendamento depois, sem override de horário.</div>
+          <div class="owner">Decidir antes da · Fase 8</div>
+        </div>
+        <div class="q">
+          <div class="qt"><code>POST /api/runs</code> — disparar análise pela API?</div>
+          <div class="qd">É um endpoint mutável que rodaria scraping caro sob demanda. <span class="opt">Recomendo não implementar na Fase 7</span>: execução fica só no CLI; a API permanece somente-leitura.</div>
+          <div class="owner">Decidir antes da · Fase 7</div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Gerado a partir de <code>planning/PLAN.md</code> e <code>planning/ADVERSARIAL_REVIEW.md</code>.
+      Modelo visual inspirado em <code>planning/html-effectiveness/16-implementation-plan.html</code>.
+      Estado do rebuild: Fases 1–5 ✅ (técnica, fundamentalista e pipeline consolidado completos) · próxima é a Fase 6 (persistência JSON) · Fases 7–8 em <code>[ ]</code>.
+    </footer>
+
+  </div>
+</body>
+</html>

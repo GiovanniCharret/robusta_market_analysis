@@ -1,0 +1,13 @@
+# Ambiente virtual
+.venv/
+venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Cache de testes
+.pytest_cache/
+
+# Saidas geradas em runtime (JSON de execucoes)
+runs/

@@ -1,0 +1,15 @@
+# Dependencias do ROBUSTA (rebuild modular)
+# Fontes de dados e analise
+yfinance
+requests
+beautifulsoup4
+lxml
+numpy
+pandas
+openpyxl
+tqdm
+# API local
+fastapi
+uvicorn
+# Testes
+pytest
