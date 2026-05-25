@@ -122,7 +122,8 @@ class RunResult:
     failed_tickers: list = field(default_factory=list)
 
 
-def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1):
+def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1,
+                     forcar_raspagem_fundamentos=False):
     """Roda a analise completa para `universo` e devolve um `RunResult`.
 
     Etapas: tecnica (`screener`) -> fundamentos (regra mensal de cache) ->
@@ -132,6 +133,9 @@ def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1):
 
     `momento` (default: agora em UTC) define `run_id`/`generated_at` e a data
     usada na regra do cache de fundamentos (raspar so no 1o dia util do mes).
+
+    `forcar_raspagem_fundamentos=True` ignora a regra mensal e forca uma nova
+    raspagem do Fundamentus (flag de CLI `--refresh-fundamentos`).
     """
     if momento is None:
         momento = pd.Timestamp.now(tz="UTC")
@@ -151,7 +155,9 @@ def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1):
 
     # 2. Fundamentos: raspa so no 1o dia util do mes, senao le o cache.
     fundamentos = data.carrega_fundamentos(
-        momento, raspar_fn=lambda: fundamental.varre_lista(universo)
+        momento,
+        raspar_fn=lambda: fundamental.varre_lista(universo),
+        forcar_raspagem=forcar_raspagem_fundamentos,
     )
 
     # 3. Indicadores dependentes de preco + rankings + score + sinal.

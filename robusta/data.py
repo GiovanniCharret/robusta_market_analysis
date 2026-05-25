@@ -98,24 +98,46 @@ def baixa_html_fundamentus(url):
     return resposta.text
 
 
-def carrega_fundamentos(data_execucao, raspar_fn, caminho_cache=None):
+def carrega_fundamentos(data_execucao, raspar_fn, caminho_cache=None,
+                        forcar_raspagem=False):
     """Decide entre raspar o Fundamentus ou ler o cache em disco.
 
-    - No 1o dia util do mes: chama `raspar_fn()` (que devolve o DataFrame de
-      fundamentos), salva esse DataFrame no Excel de cache e o devolve.
-    - Nos demais dias: le e devolve o cache do Excel.
+    Raspa (chamando `raspar_fn()` e salvando o resultado no Excel de cache)
+    quando qualquer das condicoes for verdadeira:
+      - `forcar_raspagem=True` (flag de CLI `--refresh-fundamentos`), para
+        atualizacoes pontuais (mudanca de ticker, resultados no meio do mes).
+      - `data_execucao` for o 1o dia util do mes (rotina mensal do legado).
+      - O cache nao existir ou estiver vazio (fallback de auto-recuperacao):
+        evita travar o pipeline quando o cache foi sobrescrito por engano.
+
+    Nos demais dias, le e devolve o cache do Excel.
 
     `raspar_fn` e injetado de proposito: assim esta funcao nao depende do
-    scraper (Fase F10) e pode ser testada isoladamente. Corrige o bug do
-    legado, que tinha a logica invertida (raspava todo dia menos o 1o).
+    scraper (Fase F10) e pode ser testada isoladamente.
     """
     caminho_cache = caminho_cache or config.CAMINHO_FUNDAMENTOS_CACHE
 
-    if not config.eh_primeiro_dia_util_do_mes(data_execucao):
-        logger.info("1o dia util do mes: raspando fundamentos e atualizando cache")
+    cache_invalido = (not caminho_cache.exists()) or _cache_vazio(caminho_cache)
+    primeiro_dia_util = config.eh_primeiro_dia_util_do_mes(data_execucao)
+
+    if forcar_raspagem or primeiro_dia_util or cache_invalido:
+        motivo = (
+            "forcado via flag" if forcar_raspagem
+            else "1o dia util do mes" if primeiro_dia_util
+            else "cache ausente ou vazio"
+        )
+        logger.info("Raspando fundamentos e atualizando cache (%s)", motivo)
         df = raspar_fn()
         df.to_excel(caminho_cache, index=False)
         return df
 
     logger.info("Carregando fundamentos do cache: %s", caminho_cache)
     return ler_fundamentos_cache(caminho_cache)
+
+
+def _cache_vazio(caminho_cache):
+    """True se o Excel de cache existir mas estiver sem dados (shape (0, 0))."""
+    try:
+        return pd.read_excel(caminho_cache).empty
+    except Exception:
+        return True

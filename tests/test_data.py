@@ -86,6 +86,57 @@ def test_carrega_fundamentos_usa_cache_fora_do_primeiro_dia(tmp_path):
     assert list(df["Ticker"]) == ["ASAI3"]  # devolveu o cache, sem raspar
 
 
+def test_carrega_fundamentos_forcar_raspagem_ignora_calendario(tmp_path):
+    """`forcar_raspagem=True` raspa mesmo fora do 1o dia util e com cache valido."""
+    cache = tmp_path / "cache.xlsx"
+    pd.DataFrame({"Ticker": ["ASAI3"], "ROIC": [9.0]}).to_excel(cache, index=False)
+
+    chamadas = []
+
+    def raspar_fake():
+        chamadas.append(True)
+        return pd.DataFrame({"Ticker": ["PRIO3"], "ROIC": [18.5]})
+
+    df = data.carrega_fundamentos("2026-05-15", raspar_fake,
+                                  caminho_cache=cache, forcar_raspagem=True)
+
+    assert chamadas == [True]                # raspou apesar do dia comum
+    assert list(df["Ticker"]) == ["PRIO3"]   # devolveu o novo, nao o cache
+
+
+def test_carrega_fundamentos_cache_ausente_dispara_raspagem(tmp_path):
+    """Cache que nao existe em disco aciona raspagem automatica."""
+    cache = tmp_path / "nao_existe.xlsx"
+    chamadas = []
+
+    def raspar_fake():
+        chamadas.append(True)
+        return pd.DataFrame({"Ticker": ["PRIO3"], "ROIC": [18.5]})
+
+    df = data.carrega_fundamentos("2026-05-15", raspar_fake, caminho_cache=cache)
+
+    assert chamadas == [True]
+    assert cache.exists()
+    assert list(df["Ticker"]) == ["PRIO3"]
+
+
+def test_carrega_fundamentos_cache_vazio_dispara_raspagem(tmp_path):
+    """Cache existente mas com shape (0,0) aciona raspagem automatica."""
+    cache = tmp_path / "cache.xlsx"
+    pd.DataFrame().to_excel(cache, index=False)   # cache vazio em disco
+
+    chamadas = []
+
+    def raspar_fake():
+        chamadas.append(True)
+        return pd.DataFrame({"Ticker": ["PRIO3"], "ROIC": [18.5]})
+
+    df = data.carrega_fundamentos("2026-05-15", raspar_fake, caminho_cache=cache)
+
+    assert chamadas == [True]
+    assert list(df["Ticker"]) == ["PRIO3"]
+
+
 def test_baixa_cotacoes_yahoo_sucesso(monkeypatch):
     esperado = pd.DataFrame({"Close": [1.0, 2.0]})
     monkeypatch.setattr(yfinance, "download", lambda *a, **k: esperado)

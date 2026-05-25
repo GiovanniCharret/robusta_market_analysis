@@ -4,14 +4,20 @@ Permite rodar o pipeline de ponta a ponta e, opcionalmente, exportar o
 DataFrame merged para xlsx (opt-in via flag, conforme o PLAN: export Excel so
 atras de flag explicita). Uso:
 
-    python -m robusta run                      # roda a lista INTEIRA do Excel
+    python -m robusta run                          # roda a lista INTEIRA do Excel
     python -m robusta run --export-xlsx saida.xlsx
-    python -m robusta run --tickers PRIO3 ASAI3   # subconjunto so para dev/debug
+    python -m robusta run --tickers PRIO3 ASAI3    # subconjunto so para dev/debug
+    python -m robusta run --refresh-fundamentos    # forca raspagem do Fundamentus
 
 Por padrao o universo e a lista completa de `lista_tickers_liquidos.xlsx`
 (`data.ler_lista_tickers`). O `--tickers` e apenas um override de
 desenvolvimento/debug — nao ha lista de tickers embutida no codigo (o legado
 tinha esse override hardcoded como bug).
+
+Por padrao os fundamentos sao raspados so no 1o dia util do mes (cache mensal
+em `all_ticker_financial_indicators.xlsx`). `--refresh-fundamentos` ignora a
+regra e raspa imediatamente — util para mudanca de ticker, divulgacao de
+resultados ou conferencia manual de valores.
 
 Roda chamadas de rede reais (Yahoo Finance + Fundamentus) e pode sofrer
 rate-limit. A CLI completa (`run`/`api`/`schedule`) e os logs definitivos sao
@@ -32,7 +38,9 @@ def _comando_run(args):
     # Default: lista inteira de lista_tickers_liquidos.xlsx. --tickers e so
     # um subconjunto opcional para dev/debug.
     universo = args.tickers or data.ler_lista_tickers()
-    resultado = pipeline.executa_pipeline(universo)
+    resultado = pipeline.executa_pipeline(
+        universo, forcar_raspagem_fundamentos=args.refresh_fundamentos
+    )
 
     print(
         f"run_id={resultado.run_id} "
@@ -62,6 +70,11 @@ def construir_parser():
     p_run.add_argument(
         "--export-xlsx", metavar="CAMINHO",
         help="Exporta o DataFrame merged para um .xlsx (opt-in).",
+    )
+    p_run.add_argument(
+        "--refresh-fundamentos", action="store_true",
+        help="Forca raspagem do Fundamentus mesmo fora do 1o dia util do mes "
+             "(ex: mudanca de ticker, divulgacao de resultados, conferencia).",
     )
     p_run.set_defaults(func=_comando_run)
     return parser

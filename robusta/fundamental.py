@@ -10,6 +10,7 @@ import logging
 from io import StringIO
 
 import pandas as pd
+from tqdm import tqdm
 
 from robusta import config, data
 
@@ -94,6 +95,12 @@ def formatar_tabela(tables):
                 table.iloc[:, i:i + 2].rename(columns={i: 0, i + 1: 1})
             )
     formated_table = pd.concat(pedacos, ignore_index=True)
+
+    # O Fundamentus prefixa cada rotulo com um icone de tooltip ("?" literal)
+    # vindo de `<span class="help tips">?</span>` no HTML. read_html concatena
+    # esse `?` ao texto do rotulo, virando "?Papel", "?Cotacao" etc. — o que
+    # quebra o rename `Papel -> Ticker` la embaixo. Removemos o `?` na fonte.
+    formated_table[0] = formated_table[0].astype(str).str.lstrip("?").str.strip()
 
     # Descarta as linhas cujos rotulos batem com os padroes a remover.
     for padrao in _PADROES_LINHAS_DESCARTADAS:
@@ -381,12 +388,14 @@ def varre_lista(lista, probleminhas=None):
         colunas ausentes no primeiro ticker e tinha um `except` quebrado
         referenciando `tables` indefinido). O `concat` unifica as colunas.
       - `except:` nus viram `except Exception` com logging.
+      - `tqdm` mantido (reintroduzido a pedido do usuario) para feedback
+        visual no laco mais lento (HTTP por ticker no Fundamentus).
     """
     if probleminhas is None:
         probleminhas = set()
 
     linhas = []
-    for ticker in lista:
+    for ticker in tqdm(lista, desc="Fundamentus", unit="ticker"):
         if ticker in probleminhas:
             logger.info("%s em probleminhas - pulado", ticker)
             continue
