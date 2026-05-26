@@ -29,6 +29,8 @@ r - Rollback - falhou
 [n] - Definir se o projeto usará single ou mult agents
 [x] - Adicionar BEHVIORAL_GUIDELINES à pasta do projeto e no claude.
 [x] - Após o /init - Leia todo o conteúdo de planning/. Depois, escreva o planning/ADVERSARIAL_REVIEW.md, que testa as falhas e ambiguidades do script: "Aja como um adversário maximamente competente. Sua tarefa é encontrar todas as ambiguidades, lacunas semânticas e formulações suaves neste documento que permiritiram a você seguir tecnicamente a refra enquanto viala seu espírito. Liste cada brecha com o caminho de exploração específico".
+[ ] - Solicitar que desenvolvimento do site seja feito em pequenas partes para facilitar o teste humano.
+[ ] - Mapa de testes (o que teste e como testar) escrito em um arquivo TESTES.md. Explica o teste de cada fase caso queira repetir. 
 [a] - Avaliar o plugin caveman no projeto
 [a] - Comparar arquitetura atual e clean Architecture
 [a] - sinalizar arquivos da raiz que NÃO SÃO entradas

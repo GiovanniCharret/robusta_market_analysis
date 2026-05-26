@@ -1,13 +1,54 @@
-# Ambiente virtual
+# ==========================================================
+# .gitignore — agressivo: só o stack obrigatorio vai pro repo
+# ==========================================================
+
+# ---- Python ----
 .venv/
 venv/
-
-# Cache do Python
+env/
 __pycache__/
-*.pyc
-
-# Cache de testes
+*.py[cod]
+*$py.class
 .pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
 
-# Saidas geradas em runtime (JSON de execucoes)
+# ---- Outputs do pipeline (regeneraveis) ----
 runs/
+runs_test/
+saida.xlsx
+saida*.xlsx
+site/data/latest.xlsx
+site/data/last_failed_run.json
+site/data/*.tmp
+
+# NOTA: site/data/latest.json E versionado como mock canonico
+# (testes de frontend dependem dele). Em dev, ao rodar
+# `--emit-latest site/data`, o arquivo e sobrescrito; antes
+# de commitar, restaurar com `git checkout site/data/latest.json`.
+
+# ---- Arquivos lock do Excel (criados quando o .xlsx esta aberto) ----
+~$*.xlsx
+~$*.xls
+
+# ---- Editor / IDE ----
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+*.bak
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Arquivos pessoais / scratch ----
+resume claude.txt
+*.tmp
+*.log

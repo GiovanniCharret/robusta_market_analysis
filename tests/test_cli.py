@@ -61,3 +61,17 @@ def test_cli_run_sem_tickers_usa_lista_do_excel(monkeypatch, ohlcv_fixtures, cap
 
     out = capsys.readouterr().out
     assert "tickers_ok=2" in out
+
+
+def test_cli_run_emit_latest_grava_json_e_xlsx(monkeypatch, ohlcv_fixtures, tmp_path, capsys):
+    """`--emit-latest PASTA` grava latest.json + latest.xlsx via persistence."""
+    _mock_rede(monkeypatch, ohlcv_fixtures)
+    pasta = tmp_path / "var"
+
+    cli.main(["run", "--tickers", "PRIO3", "ASAI3", "--emit-latest", str(pasta)])
+
+    assert (pasta / "latest.json").exists()
+    assert (pasta / "latest.xlsx").exists()
+
+    out = capsys.readouterr().out
+    assert "latest.json + latest.xlsx gravados" in out

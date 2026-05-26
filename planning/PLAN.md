@@ -2,102 +2,126 @@
 
 ## Summary
 
-Rebuild gradual do `main.py`, preservando a lógica empírica principal de análise técnica e fundamentalista, mas separando código por responsabilidade e trocando prints/exports Excel por uma saída JSON estável para consumo em HTML.
+Rebuild gradual do `main.py` legado, separando código por responsabilidade dentro do pacote `robusta/`. O alvo final é uma execução automatizada que roda 3×/dia num VPS Linux, grava `latest.json` em disco e o serve através do **nginx** para um **site estático** (HTML + JS vanilla) com dashboard pessoal e drill-down por ticker. Excel continua disponível para download via botão no site, mas não é mais a saída principal.
 
 Decisões travadas:
 
-- Persistência principal: arquivos JSON, funcionando como banco local simples.
-- API: FastAPI local, servindo os JSONs para o futuro HTML.
-- Rebuild: modular gradual, podendo dividir o `main.py` em mais de um `.py` quando isso simplificar o código.
-- Entradas: manter `lista_tickers_liquidos.xlsx` e `all_ticker_financial_indicators.xlsx` nesta fase.
-- WhatsApp/Twilio: removidos do rebuild.
-- Análise: não discutir nem redesenhar metodologia; apenas portar e organizar.
-- Bugs técnicos óbvios: corrigir quando impedirem a intenção do código, sem alterar a tese analítica.
+- **Persistência**: arquivo `latest.json` único (sem histórico) + `latest.xlsx` em paralelo (para download). Cada run sobrescreve atomicamente.
+- **Servidor HTTP**: **nginx servindo arquivos estáticos**. Sem FastAPI, sem aplicação Python permanente — o pipeline é processo curto disparado pelo cron.
+- **Frontend**: HTML + CSS + JavaScript vanilla, sem framework, sem build step, sem Node no VPS.
+- **Hospedagem**: VPS Linux (Hostinger) com domínio próprio e HTTPS via Let's Encrypt. Audiência: uso pessoal, sem autenticação.
+- **Agendamento**: cron do sistema, seg–sex, 3 horários (12:30, 16:00, 21:30 UTC = 09:30, 13:00, 18:30 BRT).
+- **Entradas**: `lista_tickers_liquidos.xlsx` e `all_ticker_financial_indicators.xlsx` permanecem como fonte da lista e do cache mensal. `carteira.json` (novo) lista os tickers da carteira pessoal para comparação.
+- **WhatsApp/Twilio**: removidos do rebuild (já apagados em fases anteriores).
+- **Análise**: metodologia preservada (pesos, thresholds, nomes de indicadores). Apenas portar e organizar.
+- **Bugs técnicos óbvios**: corrigir quando impedirem a intenção do código, sem alterar a tese analítica.
 
 ## Key Changes
 
-- Organizar o código por responsabilidades, seja em um pacote interno `robusta/` ou em poucos arquivos `.py` simples se isso for suficiente:
-  - configuração e constantes: versão, janelas, tolerâncias, caminhos e calendário.
-  - fontes de dados: leitura dos Excel atuais, Yahoo Finance e Fundamentus.
-  - análise técnica: variação, médias móveis, volatilidade, volume persistente e concentração de preço.
-  - análise fundamentalista: limpeza do Fundamentus, indicadores extras, classes e ranking.
-  - pipeline: orquestração do fluxo completo técnico + fundamentalista + merge + ranking final.
-  - persistência JSON: gravação de execuções, `latest.json` e metadados.
-  - API FastAPI: endpoints JSON para o HTML.
+- Organização do código em `robusta/` por responsabilidades (status atual entre parênteses):
+  - `robusta/config.py` (concluído) — versão, janelas, caminhos, calendário.
+  - `robusta/data.py` (concluído) — leitura de Excel, Yahoo, Fundamentus.
+  - `robusta/technical.py` (concluído) — análise técnica T1–T7.
+  - `robusta/fundamental.py` (concluído) — análise fundamentalista F1–F10.
+  - `robusta/pipeline.py` (concluído) — orquestração + `RunResult`.
+  - `robusta/cli.py` (já existe, será expandida) — entrypoint `python -m robusta run`.
+  - `robusta/persistence.py` (Fase 6) — serialização JSON + XLSX.
+  - `site/` (Fase 7) — frontend estático (HTML + CSS + JS).
 
-- Transformar `main.py` em CLI simples:
-  - `python main.py run`: executa uma análise e grava JSON.
-  - `python main.py api`: sobe a API local.
-  - `python main.py schedule`: opcional, roda nos horários configurados sem overrides de debug.
+- CLI atual e futura (`python -m robusta run`):
+  - `--tickers PRIO3 ASAI3` (DEV/DEBUG, **já existe**) — subconjunto opcional.
+  - `--export-xlsx CAMINHO` (**já existe**) — exporta o `merged_results` para xlsx. Em produção via cron, aponta para `~/robusta/var/latest.xlsx`.
+  - `--refresh-fundamentos` (**já existe**) — força raspagem do Fundamentus fora do 1º dia útil do mês.
+  - `--emit-latest` (**Fase 6**) — escreve `~/robusta/var/latest.json` via `persistence.py`. Em produção via cron, sempre passado.
 
-- Remover do fluxo normal:
-  - credenciais Twilio.
-  - função `send_whatsapp_messages`.
-  - prints de progresso como saída de produto.
-  - exports automáticos para Excel — proibidos no fluxo normal; permitidos apenas atrás de flag explícita de CLI.
+- Removidos do fluxo (já feito nas fases concluídas):
+  - credenciais Twilio e função `send_whatsapp_messages`.
+  - `main.py` legado (excluído; snapshot em `scripts_antigos/main.py` para referência).
+  - prints de progresso (substituídos por logging + tqdm controlado).
 
-- Corrigir bugs técnicos conhecidos durante o porte (a lista completa é a desta seção; não existe catálogo externo):
-  - remover download incondicional de `GOAU3` em `extrai_cotacoes`.
-  - trocar atribuições com `:` por `=` em `add_price_concentration_levels_by_me` e dar `return df` explícito (hoje a função retorna `None` e o caller reatribui).
-  - remover override fixo de `hora_atual = "19:00"` e `eh_dia_util = True`.
-  - remover override silencioso de `ticker_list = {'ticker':['PRIO3','ASAI3','LREN3']}` em `gere_df_principal` — a lista lida do Excel deve ser a única fonte de universo.
-  - inverter a lógica de cache de fundamentos em `gere_df_principal`: raspar Fundamentus no 1º dia útil do mês e salvar; nos demais dias, carregar do Excel cacheado. Hoje está trocado.
-  - importar a exceção correta no retry do Yahoo: `from yfinance.exceptions import YFRateLimitError` (ou capturar `Exception` genérico). Hoje o `except YFRateLimitError` lança `NameError` no primeiro rate-limit.
-  - atribuir o retorno de `.fillna(0)` nas funções de ranking fundamentalista (linhas ~1085 e ~1112); hoje o resultado é descartado e NaNs contaminam `avaliacao_fundamentalista`.
-  - proteger `pandas.qcut(..., 10)` com `duplicates='drop'` ou fallback, para universos pequenos e indicadores com muitos empates (ex: ROIC = 0).
-  - corrigir filename `' carteira_automatica.xlsx'` (espaço inicial) em `gere_df_principal`.
-  - avaliar remoção de `concatene_analises_tecnicas` (referencia `last_line` indefinido e não é chamada) — confirmar antes de excluir.
-  - substituir `pandas.concat` em loop dentro de `varre_lista` por acumulação em lista + `concat` único.
-  - tratar variáveis globais como estado explícito do pipeline, não como dependência invisível.
+- Bugs técnicos conhecidos: a lista que orientou o porte está abaixo. Os que **continuam relevantes** estão marcados; os já corrigidos ficam como histórico.
+  - ~~download incondicional de `GOAU3` em `extrai_cotacoes`~~ — corrigido na Fase 3 (T6).
+  - ~~`:` no lugar de `=` em `add_price_concentration_levels_by_me`~~ — corrigido na Fase 3 (T5, bug B1).
+  - ~~override de `hora_atual = "19:00"` e `eh_dia_util = True`~~ — `main.py` legado removido.
+  - ~~override de `ticker_list = {'ticker':[...]}` em `gere_df_principal`~~ — Fase 2.
+  - ~~lógica de cache invertida em `carrega_fundamentos`~~ — Fase 2 (com nova flag `forcar_raspagem` para atualização sob demanda).
+  - ~~`YFRateLimitError` não importado~~ — Fase 2.
+  - ~~`.fillna(0)` sem atribuição em rankings~~ — Fase 4 (F4/F5).
+  - ~~`pandas.qcut` sem proteção contra empates~~ — Fase 4 (`_classe_decil`).
+  - ~~filename `' carteira_automatica.xlsx'`~~ — n/a (export viável só via `--export-xlsx`).
+  - ~~`pandas.concat` em loop dentro de `varre_lista`~~ — Fase 4 (F10).
+  - ~~variáveis globais (`data_cache_backtest`, etc.)~~ — Fase 3 (handoff `precos_por_ticker`).
+  - ~~Encoding do Fundamentus: `?` literal de tooltip aparecendo nas chaves~~ — corrigido em `formatar_tabela` (limpeza de prefixo `?` antes do rename `Papel → Ticker`).
 
 ### Fronteira bug vs metodologia — invariantes
 
 A regra "corrigir bugs quando impedirem a intenção do código" só vale contra estas invariantes. Violá-las é bug a corrigir; mudar número, peso, threshold ou nome de indicador é metodologia e **não** se altera sem pedido explícito:
 
 - o universo analisado vem somente de `lista_tickers_liquidos.xlsx`, sem override embutido no código.
-- a raspagem de fundamentos ocorre só no 1º dia útil do mês; nos demais dias, lê o cache.
+- a raspagem de fundamentos ocorre **só** quando: (a) é o 1º dia útil do mês, (b) o usuário passou `--refresh-fundamentos`, ou (c) o cache `all_ticker_financial_indicators.xlsx` está ausente/vazio (fallback de auto-recuperação). Nos demais casos, lê o cache.
 - rankings e `avaliacao_fundamentalista` não podem conter `NaN` silencioso.
 - toda execução que chega ao fim serializa um JSON válido conforme o contrato.
 - nenhuma coluna obrigatória do contrato JSON pode estar ausente da saída.
 
-## JSON And API Contract
+## JSON Contract
 
-- Cada execução gera um arquivo JSON em formato orientado a registros:
-  - `schema_version` — inteiro do contrato JSON; incrementa a cada mudança incompatível de campos.
-  - `run_id` — string determinística por timestamp (ex: `2026-04-24T19-00-00Z`).
-  - `generated_at` — ISO 8601 UTC.
-  - `robusta_version` — string vinda de `config.VERSION`, fonte única (hoje há divergência entre `versao = "12.3.1"` e docstring `"ROBUSTA - 13"`).
-  - `input_universe` — lista de tickers base (sem `.SA`) efetivamente analisados.
-  - `summary` — objeto com contagens (`tickers_ok`, `tickers_failed`), média e desvio padrão de volatilidade (hoje descartados por `distorions_analysys`), e demais metadados agregados.
-  - `technical_results` — lista de registros, um por ticker, com as colunas do DataFrame técnico final (tipos primitivos JSON).
-  - `fundamental_results` — lista de registros, um por ticker, com as colunas do DataFrame fundamentalista após ranking.
-  - `merged_results` — lista de registros, um por ticker, equivalente ao `carteira_automatica` pós-merge e ranking cross-sectional.
-  - `portfolio_signals` — resultado de `distorted_price_analysis` (top 5 longs e top 5 shorts), herdeiro do que antes ia para o WhatsApp.
-  - `warnings` — lista de strings com avisos não fatais (ex: `qcut` caiu em fallback, ticker sem fundamentos).
-  - `failed_tickers` — lista de objetos `{ticker, reason}`.
+A cada execução do pipeline, dois arquivos são sobrescritos atomicamente em `~/robusta/var/`:
 
-- Convenções de serialização:
-  - `NaN`/`None` → `null` JSON (campo presente, valor `null`), não campo omitido.
-  - `pandas.Timestamp` → ISO 8601 string.
-  - `numpy.int64`/`numpy.float64` → `int`/`float` nativos; encoder customizado obrigatório (`json.dumps` padrão lança `TypeError`).
-  - Chaves de dicionário sempre string.
+- `latest.json` — payload completo da execução, consumido pelo frontend (`fetch('/data/latest.json')`).
+- `latest.xlsx` — `merged_results` exportado para Excel, servido pelo botão de download do site.
 
-- `latest.json` replica a execução mais recente (cópia, não symlink) para consumo direto pelo HTML.
+Não há retenção de execuções antigas. Sem `runs/<timestamp>.json`, sem symlinks.
 
-- Handoff interno técnica → fundamentalista:
-  - Contrato: `Dict[str, float]` mapeando ticker base (`PRIO3`) → último preço de fechamento.
-  - A fase técnica produz e normaliza a chave (remove `.SA`); a fase fundamentalista consome sem saber da Yahoo.
-  - Tipo definido em `config.py` ou módulo de tipos; passado como argumento explícito, não como global.
+### Estrutura de `latest.json`
 
-- Endpoints FastAPI mínimos:
-  - `GET /api/health`: status da API e versão.
-  - `GET /api/runs/latest`: resultado consolidado mais recente.
-  - `GET /api/runs`: lista execuções disponíveis.
-  - `GET /api/runs/{run_id}`: execução específica.
-  - `GET /api/tickers/{ticker}`: dados consolidados de um ticker na execução mais recente.
-  - `GET /api/signals`: atalho para `portfolio_signals` da execução mais recente.
+Formato orientado a registros, com snake_case ASCII em todas as chaves:
 
-- O HTML futuro não dependerá de pandas, Excel ou prints; ele consumirá somente JSON.
+- `schema_version` — inteiro; incrementa a cada mudança incompatível de campos. Versão atual: `1`.
+- `run_id` — string ISO 8601 sem `:` (ex: `2026-05-26T13-00-00Z`).
+- `generated_at` — ISO 8601 UTC.
+- `robusta_version` — string vinda de `config.VERSION`.
+- `input_universe` — lista de tickers base (sem `.SA`) efetivamente analisados.
+- `summary` — objeto com `tickers_ok`, `tickers_failed`, `vol_media`, `vol_std` (preservados de `distorions_analysys`).
+- `portfolio_signals` — objeto `{longs: [...], shorts: [...]}` com os tickers do top 3 / bottom 3 do `distortion_ranking` (mockup atual mostra top 3; o pipeline pode produzir mais e o frontend recorta).
+- `tickers` — dicionário `{ticker_base: {...}}` com **todos** os tickers do universo. Cada valor traz todos os campos calculados pelo pipeline (técnica + fundamental + ranking), em snake_case. O frontend escolhe o que mostrar.
+- `warnings` — lista de strings com avisos não fatais (ex: `qcut` caiu em fallback, ticker sem fundamentos).
+- `failed_tickers` — lista de objetos `{ticker, reason}`.
+
+Campos relevantes dentro de cada `tickers[TICKER]`:
+
+- Identidade: `ticker`, `setor`, `subsetor`.
+- Sinais: `fundamental_signal` (-1/0/+1), `vol_signal` (-1/0/+1), `posicao_setorial` (`melhor`/`pior`/`""`).
+- Técnica: `preco`, `vol_anualizada_30d`, `mma9..mma200`, `pct_to_mma10`, `pct_to_mma50`, `alto_vol_persistente`, e os 8 níveis `sup_min_by_mslf` ... `momentum_break_by_mslf`.
+- Fundamental: `pl`, `pvp`, `ev_ebit`, `roic`, `cres_rec_5a`, `div_liq_vm`, `avaliacao_fundamentalista`.
+- Ranking: `distortion_ranking`.
+
+### Convenções de serialização
+
+- `NaN`/`None` → `null` JSON (campo presente, valor `null`), não campo omitido.
+- `pandas.Timestamp` → ISO 8601 string.
+- `numpy.int64`/`numpy.float64` → `int`/`float` nativos; encoder customizado obrigatório (`json.dumps` padrão lança `TypeError`).
+- Chaves de dicionário sempre string.
+- Sentinelas `"Abismo"`/`"Foguete"` dos níveis `*_by_mslf` mantêm o tipo string (frontend trata).
+
+### Escrita atômica
+
+`persistence.py` grava primeiro em `latest.json.tmp` e usa `Path.replace()` (syscall atômica no Linux) para promover o arquivo. Em nenhum momento o nginx serve um arquivo pela metade.
+
+### Handoff interno técnica → fundamentalista
+
+- Contrato: `Dict[str, float]` mapeando ticker base (`PRIO3`) → último preço de fechamento.
+- A fase técnica produz e normaliza a chave (remove `.SA`); a fase fundamentalista consome sem saber da Yahoo.
+- Passado como argumento explícito ao longo do pipeline, não como global.
+
+### Carteira pessoal (`carteira.json`)
+
+Arquivo separado, editado manualmente pelo usuário em `~/robusta/site/carteira.json` (servido pelo nginx como `/carteira.json`):
+
+```json
+{ "tickers": ["LREN3", "ASAI3", "GOAU4", "PRIO3", "KBLN11", "POMO4"] }
+```
+
+O frontend cruza com `latest.json` em runtime para popular o bloco "Sua carteira" da página do ticker.
 
 ## Implementation Plan
 
@@ -310,59 +334,84 @@ Estado atual: todas as fases em `[ ]`. Executor deve atualizar o checkbox da fas
    - fazer merge e ranking final; preservar o segundo valor retornado por `distorions_analysys` (`{'média', 'std_vol'}`) em vez de descartá-lo — vai para `summary` no JSON.
    - devolver um objeto/estrutura única (ex: `RunResult` dataclass) pronto para persistência, contendo: `merged_results`, `technical_results`, `fundamental_results`, `summary`, `portfolio_signals`, `warnings`, `failed_tickers`.
    - entrada: lista de tickers e configuração de execução.
-   - saída: `RunResult` com os campos acima; compatível campo a campo com o schema da seção JSON And API Contract.
+   - saída: `RunResult` com os campos acima; compatível campo a campo com o schema da seção JSON Contract.
    - teste rápido: pipeline com mocks para dois tickers, comparação de colunas essenciais contra o baseline, e confirmação de que `summary.std_vol` não é `None`.
 
-6. `[ ]` Criar persistência JSON:
-   - converter DataFrames para records JSON com `orient='records'` e datas serializadas em ISO.
-   - encoder customizado obrigatório para `numpy.int64/float64`, `pandas.Timestamp` e `NaN → null` (contrato definido na seção JSON And API Contract).
-   - gravar execução com `run_id` determinístico por timestamp.
-   - gravar/atualizar `latest.json` como cópia (não symlink).
-   - incluir avisos e tickers com falha sem quebrar a execução inteira.
-   - **não** atualizar `latest.json` em execução degenerada — `tickers_ok == 0`, coluna obrigatória do contrato ausente ou taxa de falha acima de 50%; nesse caso gravar o JSON da execução marcado como falho e sair com código de erro.
-   - incluir `portfolio_signals` (top 5 long / top 5 short) vindos de `distorted_price_analysis`.
+6. `[x]` Persistência: `latest.json` + `latest.xlsx`
+   - novo módulo `robusta/persistence.py` com função `grava_latest(run_result, pasta_var)` que recebe o `RunResult` da Fase 5 e produz os dois arquivos.
+   - serialização JSON conforme a seção "JSON Contract": encoder customizado para `numpy.int64/float64` → `int/float`, `pandas.Timestamp` → ISO 8601, `NaN` → `null`. Chaves todas em snake_case ASCII.
+   - estrutura `tickers: {TICKER: {...}}` (dict por ticker, não array) — facilita o drill-down do frontend (`data.tickers["PRIO3"]` direto, sem `find()`).
+   - escrita atômica: grava em `latest.json.tmp` e usa `Path.replace()` (syscall atômica no Linux). O nginx nunca serve arquivo pela metade.
+   - `latest.xlsx`: salva o `merged_results` via `to_excel`. Mesmo padrão atômico (`latest.xlsx.tmp` → `replace`).
+   - guarda contra execução degenerada: **não** sobrescreve `latest.json` se `tickers_ok == 0` ou taxa de falha > 50%. Nesse caso, grava num arquivo de log de erro (ex: `~/robusta/var/last_failed_run.json`) e sai com `exit code` != 0 (cron registra a falha).
+   - integração com a CLI: a flag `--emit-latest` em `python -m robusta run` dispara `grava_latest`. O cron passa `--emit-latest --export-xlsx ~/robusta/var/latest.xlsx`.
    - entrada: `RunResult` da Fase 5.
-   - saída: arquivo JSON de execução e `latest.json`.
-   - teste rápido: serializar fixture com datas, floats, `NaN`, `numpy.float64` e `pandas.Timestamp` sem erro; e `json.loads` da saída deve conter `null` onde havia `NaN`.
+   - saída: `~/robusta/var/latest.json` e `~/robusta/var/latest.xlsx` atualizados atomicamente.
+   - teste rápido: serializar fixture de `RunResult` com `NaN`, `numpy.float64`, `pandas.Timestamp` e sentinelas `"Abismo"`/`"Foguete"` sem erro; `json.loads` da saída deve conter `null` onde havia `NaN` e a estrutura `tickers` indexada por ticker.
 
-7. `[ ]` Criar API FastAPI:
-   - servir os arquivos JSON já gravados.
-   - não recalcular análise em requests de leitura.
-   - CORS restrito a `localhost` desde o início.
-   - bind padrão em `127.0.0.1` (nunca `0.0.0.0`); a API só lê arquivos da pasta de runs, sem aceitar path arbitrário.
-   - incluir `GET /api/signals` apontando para `portfolio_signals` da execução mais recente.
-   - expor endpoint opcional `POST /api/runs` apenas se for desejado acionar uma nova análise pela API; por padrão, execução fica no CLI.
-   - entrada: arquivos JSON persistidos.
-   - saída: respostas HTTP JSON.
-   - teste rápido: `GET /api/health`, `GET /api/runs/latest`, `GET /api/signals` e `GET /api/tickers/{ticker}` retornando 200 em fixture local.
+   **Evidência (concluída):**
+   - Arquivos criados: `robusta/persistence.py` (encoder + mapping de colunas + `constroi_payload` + `grava_latest`); `tests/test_persistence.py` (22 testes cobrindo conversor de células, payload, serialização, escrita atômica, guarda contra execução degenerada).
+   - Mapping de colunas em `COLUNA_PARA_JSON`: `Ticker → ticker`, `Fundamental_?value → fundamental_signal`, `Vol Mês^Anual_?value → vol_signal`, `Posicao setorial → posicao_setorial`, `Close → preco`, `vol_anualized_30days → vol_anualizada_30d`, `Alto_volume_persistente → alto_vol_persistente`, MMAs como `mma9..mma200`, `%_to_MMA10/50 → pct_to_mma10/50`, níveis `*_by_mslf` preservam nome, fundamentais como `pl/pvp/ev_ebit/roic/cres_rec_5a/div_liq_vm`, `avaliacao_fundamentalista` e `distortion_ranking` mantidos. Campos ausentes na linha viram `null` (invariante: campo presente, valor `null`, nunca key omitida).
+   - **Bug encontrado durante TDD**: a checagem `isinstance(valor, float)` capturava `np.float64` (que herda de `float`) antes do branch numpy, deixando passar `np.float64` em vez de converter pra `float` nativo. Reordenado para checar `np.floating`/`np.integer`/`np.bool_` ANTES dos tipos Python nativos.
+   - **`Setor` ausente no `merged_results`** (limitação herdada): `rankeando_empresas` (F7) faz `groupby('Setor').apply().reset_index(drop=True)` e o pandas remove a coluna de groupby do resultado. O mapping `Setor → setor` continua presente mas resulta em `null`. `Subsetor` segue OK e é o que o dashboard usa. Não é bug a corrigir nesta fase.
+   - CLI: adicionada flag `--emit-latest [PASTA]` em `robusta/cli.py` (sem argumento → `~/robusta/var/`; com argumento → usa o caminho). Teste em `tests/test_cli.py` confirma criação dos dois arquivos.
+   - Escrita atômica via `Path.write_text` + `Path.replace`; arquivos `.tmp` são removidos após o rename. Confirmado por teste (`test_grava_latest_remove_tmp_apos_replace`).
+   - Guarda contra execução degenerada: `tickers_ok == 0` OU `tickers_failed/(ok+failed) > 0.5` aciona `RuntimeError`; payload vai pra `last_failed_run.json`, `latest.json` da execução anterior permanece intacto. Confirmado por 3 testes (zero tickers, taxa > 50%, preservação após falha).
+   - Comando: `pytest -q` → `108 passed in 1.37s` (85 anteriores + 22 de persistence + 1 novo de CLI).
+   - Limitações: não há teste com `RunResult` real de ponta-a-ponta gravado em disco (os testes usam fixture construída manualmente). A integração ponta-a-ponta vai ser exercitada pelo teste da CLI (`test_cli_run_emit_latest_grava_json_e_xlsx`) e pelo smoke test manual no VPS.
 
-8. `[ ]` Limpar execução:
-   - `main.py` vira apenas CLI.
-   - scheduler fica explícito e desativável; remover overrides de `hora_atual = "19:00"` e `eh_dia_util = True`.
-   - remover `send_whatsapp_messages` e credenciais Twilio hardcoded.
-   - logs substituem prints.
-   - Twilio e WhatsApp ficam fora.
-   - entrada: argumentos de linha de comando (`run`, `api`, `schedule`).
-   - saída: execução do pipeline, servidor local ou scheduler.
-   - teste rápido: `python main.py --help` e `python main.py run --tickers PRIO3 ASAI3 --dry-run` sem efeitos colaterais fora dos arquivos esperados.
+7. `[x]` Frontend estático: dashboard + drill-down
+   - novo diretório `site/` no repo, contendo: `index.html`, `ticker.html`, `assets/app.js`, `assets/app.css`, `carteira.json` (template inicial).
+   - **Vanilla JS**: sem framework, sem build step, sem npm. Carrega via `<script>` direto.
+   - layout aprovado nos mockups `planning/architecture-static-first.html` e `planning/dashboard-v1-mockup.html`. Estética clean estilo Google (paleta marfim/slate/clay/olive/oat).
+
+   **Sub-fases:**
+
+   - `[x]` 7a — `assets/app.js` lê `/data/latest.json` e expõe um shape estável `{ run_id, generated_at, signals: {longs, shorts}, tickers, carteira }`. Inclui parser do query string `?ticker=` para o drill-down. Fixture mock em `tests/fixtures/latest_mock.json` para iteração local sem rede.
+
+   - `[x]` 7b — `index.html`: brand "ROBUSTA" centralizado, run stamp, duas colunas Long/Short com top 3 / bottom 3, busca de ticker, botão download Excel. Cliques em ticker → `ticker.html?ticker=XXXX`.
+
+   - `[x]` 7c — `ticker.html`: cabeçalho com nome/preço/setor, bloco "Avaliação fundamentalista" (3 stats), bloco "Suporte · preço · resistência" (régua SVG horizontal com 6 níveis + preço), `std_raking_value` e `momentum_break` como meta-pair. Tratamento das sentinelas `"Abismo"`/`"Foguete"` (marcador "vazio" com label).
+
+   - `[x]` 7d — `carteira.json` + bloco "Carteira" na `ticker.html`: tabela compacta com **3 colunas** (ticker, mini-régua S/R, preço — após revisão visual do usuário, as colunas score/sinal/posição foram removidas por redundância com o bloco fundamentalista do topo). Título do bloco simplificado para "Carteira" centralizado. Cabeçalho "suporte · preço · resistência" do bloco da régua principal também removido. Linhas clicáveis navegam para `ticker.html?ticker=XXXX`. Linha do ticker buscado destacada com fundo clay claro. Pin "● na carteira" no header quando aplicável. Schema do `carteira.json`: `{ "tickers": [ ... ] }`.
+
+   - `[x]` 7e — comportamento de navegação **B1**: clicar em qualquer linha do bloco "Carteira" navega para `ticker.html?ticker=<clicado>`, recarregando a página com o novo ticker em destaque no topo. Sem SPA — uma URL por ticker (favoritável, compartilhável, botão voltar do browser funciona). **Entregue como subproduto natural da 7d**: o `addEventListener("click", ...)` nas linhas da tabela usa `window.location.href = R.urlDoTicker(t)`, que aciona navegação full-page nativa do browser (não pushState/SPA).
+
+   - testes automatizados (responsabilidade do assistant): `node --check site/assets/app.js` (sintaxe JS válida); fixture `latest_mock.json` permite abrir `file://.../site/index.html` localmente.
+   - testes visuais (responsabilidade do usuário): a cada sub-fase 7b/7c/7d, o usuário abre o arquivo local no navegador, compara com o mockup e diz "ok" ou pede ajuste. Sem isso, "está pronto" é meia-verdade.
 
 ## Test Plan
 
+Duas naturezas de teste, com responsáveis diferentes:
+
+### Testes automatizados (responsabilidade do assistant)
+
 - Framework único: `pytest`. Os testes ficam em `tests/`, nomeados `test_*.py`. Comando único de verificação: `pytest`. Uma fase só pode ser `[x]` se seu teste passa nesse comando — REPL e scripts descartáveis não contam.
-- Cada fase deve ter um teste rápido executável imediatamente após o porte da função, usando fixture pequena ou mock de rede.
+- Cada fase deve ter um teste rápido executável imediatamente após o porte da função, usando fixture pequena ou mock de rede. **Tests must not touch the network**: fixtures em `tests/fixtures/` (OHLCV CSVs, Fundamentus HTML, `latest_mock.json`) ou injeção de scrapers/downloaders.
 - Os testes devem comparar entradas e saídas, não apenas verificar que a função roda sem erro.
-- Enquanto o porte estiver em andamento, usar testes focados por função antes de criar testes integrados maiores.
-- No fechamento do rebuild, manter uma bateria mínima:
-  - testes unitários das fases T1-T7 e F1-F10.
-  - teste de pipeline com 2 ou 3 tickers usando mocks de Yahoo/Fundamentus.
-  - teste de JSON garantindo serialização sem tipos pandas/numpy.
-  - teste de API garantindo HTTP 200 nos endpoints principais.
-  - teste de CLI garantindo que `main.py` dispara o caminho correto sem depender de scheduler.
+- Bateria mínima no fechamento:
+  - testes unitários das fases T1–T7 e F1–F10 (já existem; **85 testes verdes hoje**).
+  - teste de pipeline com 2 ou 3 tickers usando mocks de Yahoo/Fundamentus (existe).
+  - teste da Fase 6 (JSON + XLSX): serialização sem tipos pandas/numpy, `null` no lugar de `NaN`, sentinelas `"Abismo"`/`"Foguete"` preservadas, escrita atômica (tmp + replace).
+  - teste da Fase 7 (frontend): `node --check site/assets/app.js` confirma sintaxe JS válida. Sem testes de UI automatizados (Playwright/Selenium seriam overengineering pra dashboard pessoal).
+
+### Testes visuais manuais (responsabilidade do usuário)
+
+O assistant **não** consegue olhar o site. Visual fica com o usuário:
+
+- A cada sub-fase 7b/7c/7d: o assistant produz o código + uma fixture `latest_mock.json`; o usuário abre `file://.../site/index.html` (ou `ticker.html?ticker=PRIO3`) no navegador, compara com os mockups em `planning/dashboard-v1-mockup.html`, e dá feedback.
+
+### Convenção operacional
+
+Ao terminar uma sub-fase visual, o assistant deve avisar com instruções específicas de como abrir e o que olhar. "Está pronto" sem teste visual do usuário é meia-verdade.
 
 ## Assumptions
 
-- A metodologia de análise atual será preservada, inclusive pesos, thresholds e nomes de indicadores, salvo correções técnicas óbvias.
-- Excel continuará sendo entrada nesta fase, mas não será saída principal.
-- O HTML será construído depois em cima da API JSON; este plano prepara o contrato e a infraestrutura de dados.
-- Não haverá autenticação na API local nesta primeira fase.
-- A parte experimental que ficava no final do arquivo já foi removida do script atual; o rebuild não precisa mais contemplar essa limpeza.
+- A metodologia de análise é preservada (pesos, thresholds, nomes de indicadores). Mudanças requerem pedido explícito.
+- Excel continua sendo **entrada** (`lista_tickers_liquidos.xlsx`, `all_ticker_financial_indicators.xlsx`) e também **saída opcional** (`latest.xlsx` para download via botão do site).
+- O site é uso pessoal, sem autenticação. Audiência: somente o autor.
+- Hospedagem: VPS Linux na Hostinger, com domínio próprio (a comprar) e HTTPS via Let's Encrypt.
+- O PC do usuário fica fora do ciclo operacional: o VPS roda 3×/dia via cron, independente de o PC estar ligado.
+- A carteira pessoal vive num arquivo `carteira.json` editado manualmente; mudanças são raras.
+- A parte experimental do `main.py` legado já foi removida; o rebuild não precisa contemplar essa limpeza.
+- Não há plano atual para histórico de runs, métricas, alertas ou dashboards comparando datas. Se forem necessários no futuro, viram fases novas, sem desfazer a arquitetura static-first.

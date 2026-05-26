@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROBUSTA — Arquitetura "Static-first" (proposta)</title>
+  <style>
+    :root {
+      --ivory:    #FAF9F5;
+      --slate:    #141413;
+      --clay:     #D97757;
+      --oat:      #E3DACC;
+      --olive:    #788C5D;
+      --gray-150: #F0EEE6;
+      --gray-300: #D1CFC5;
+      --gray-500: #87867F;
+      --gray-700: #3D3D3A;
+      --white:    #FFFFFF;
+
+      --serif: ui-serif, Georgia, 'Times New Roman', serif;
+      --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--ivory);
+      color: var(--gray-700);
+      line-height: 1.55;
+      padding: 56px 32px 120px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page { max-width: 1120px; margin: 0 auto; }
+
+    /* ---------- header ---------- */
+
+    header.page-head { margin-bottom: 48px; max-width: 860px; }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 38px;
+      line-height: 1.15;
+      color: var(--slate);
+      margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .lede { font-size: 15.5px; color: var(--gray-700); margin-bottom: 18px; max-width: 760px; }
+
+    .status-tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: var(--oat);
+      color: var(--slate);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    /* ---------- summary strip ---------- */
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 36px 0 64px;
+    }
+    @media (max-width: 900px) { .summary { grid-template-columns: repeat(2, 1fr); } }
+    .summary .cell {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .summary .k {
+      font-family: var(--mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gray-500);
+      margin-bottom: 6px;
+    }
+    .summary .v {
+      font-size: 17px;
+      color: var(--slate);
+      font-weight: 600;
+    }
+    .summary .v.accent { color: var(--clay); }
+    .summary .sub { font-size: 12px; color: var(--gray-500); font-weight: 400; margin-top: 2px; }
+
+    /* ---------- section chrome ---------- */
+
+    section { margin-bottom: 64px; }
+
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      margin-bottom: 8px;
+    }
+    .sec-head .num {
+      font-family: var(--mono);
+      font-size: 12px;
+      background: var(--oat);
+      color: var(--slate);
+      padding: 3px 9px;
+      border-radius: 8px;
+    }
+    .sec-head h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 26px;
+      color: var(--slate);
+      letter-spacing: -0.01em;
+    }
+    .sec-intro {
+      font-size: 14.5px;
+      color: var(--gray-500);
+      max-width: 760px;
+      margin-bottom: 28px;
+    }
+
+    code {
+      font-family: var(--mono);
+      font-size: 0.88em;
+      background: var(--gray-150);
+      border: 1px solid var(--gray-300);
+      border-radius: 4px;
+      padding: 1px 5px;
+    }
+
+    /* ---------- diagram ---------- */
+
+    .diagram {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      padding: 28px;
+      overflow-x: auto;
+    }
+    .diagram svg { display: block; min-width: 760px; max-width: 100%; height: auto; }
+    .diagram text { font-family: var(--mono); }
+    .caption { font-size: 13px; color: var(--gray-500); margin-top: 16px; max-width: 760px; }
+
+    .legend { display: flex; gap: 22px; margin-top: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--gray-500); }
+    .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -2px; margin-right: 6px; }
+
+    /* ---------- decisions table ---------- */
+
+    .decisions {
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--white);
+    }
+    .decisions .row {
+      display: grid;
+      grid-template-columns: 220px 1fr 1.4fr;
+      gap: 0;
+    }
+    @media (max-width: 900px) { .decisions .row { grid-template-columns: 1fr; } }
+    .decisions .row + .row { border-top: 1.5px solid var(--gray-300); }
+    .decisions .cell { padding: 16px 18px; font-size: 13.5px; }
+    .decisions .cell + .cell { border-left: 1.5px solid var(--gray-300); }
+    @media (max-width: 900px) { .decisions .cell + .cell { border-left: none; border-top: 1px dashed var(--gray-300); } }
+    .decisions .head { background: var(--gray-150); font-weight: 600; color: var(--slate); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .decisions .cell strong { color: var(--slate); }
+    .decisions .why { color: var(--gray-700); }
+
+    /* ---------- filesystem tree ---------- */
+
+    .tree {
+      background: var(--slate);
+      border-radius: 12px;
+      padding: 20px 24px;
+      overflow-x: auto;
+    }
+    .tree pre {
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.7;
+      color: #E8E6DE;
+      white-space: pre;
+    }
+    .tree .dir  { color: var(--clay); }
+    .tree .leaf { color: #E8E6DE; }
+    .tree .cm   { color: var(--gray-500); }
+    .tree .acc  { color: #C9B98A; }
+
+    /* ---------- timeline ---------- */
+
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .step {
+      display: grid;
+      grid-template-columns: 84px 28px 1fr;
+      gap: 0 18px;
+      position: relative;
+    }
+    .step .when {
+      text-align: right;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+      padding-top: 4px;
+    }
+    .step .dot-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .step .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 3px solid var(--clay);
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+    .step .line {
+      width: 2px;
+      flex: 1;
+      background: var(--gray-300);
+      margin: 4px 0;
+    }
+    .step:last-child .line { display: none; }
+    .step .body { padding-bottom: 28px; }
+    .step .body h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 18px;
+      color: var(--slate);
+      margin-bottom: 4px;
+    }
+    .step .body p { font-size: 13.5px; color: var(--gray-500); margin-bottom: 8px; max-width: 640px; }
+
+    /* ---------- callouts ---------- */
+
+    .note {
+      background: var(--gray-150);
+      border: 1.5px solid var(--gray-300);
+      border-left: 4px solid var(--olive);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-top: 24px;
+      font-size: 13.5px;
+      color: var(--gray-700);
+    }
+    .note.warn { border-left-color: var(--clay); }
+    .note .nt { font-weight: 600; color: var(--slate); margin-bottom: 6px; }
+    .note ul { margin: 6px 0 0 18px; }
+    .note li { margin-bottom: 4px; }
+
+    /* ---------- open questions ---------- */
+
+    .open-q { display: flex; flex-direction: column; gap: 14px; max-width: 860px; }
+    .q {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-left: 4px solid var(--clay);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .q .qt { font-weight: 600; font-size: 15px; color: var(--slate); margin-bottom: 4px; }
+    .q .qd { font-size: 13.5px; color: var(--gray-500); }
+    .q .qd .opt { color: var(--gray-700); display: block; margin-top: 4px; }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <header class="page-head">
+      <div class="eyebrow">Brainstorm · seção 1/6</div>
+      <h1>Arquitetura "Static-first" para o site dos destaques do ROBUSTA</h1>
+      <p class="lede">
+        Site privado de uso pessoal, hospedado em VPS Linux com domínio próprio,
+        mostrando destaques da última execução e drill-down por ticker. Pipeline
+        Python (já existente em <code>robusta/</code>) roda 3× ao dia via cron,
+        grava JSONs em disco, e o nginx serve esses JSONs como arquivos
+        estáticos para um frontend de HTML + JavaScript vanilla.
+      </p>
+      <span class="status-tag">Status: proposta · aguardando aprovação</span>
+    </header>
+
+    <!-- ============ summary strip ============ -->
+
+    <div class="summary" aria-label="Resumo das decisões">
+      <div class="cell">
+        <div class="k">Audiência</div>
+        <div class="v">Só você</div>
+        <div class="sub">Dashboard privado, sem auth complexa</div>
+      </div>
+      <div class="cell">
+        <div class="k">Hosting</div>
+        <div class="v">VPS Linux</div>
+        <div class="sub">Domínio próprio + HTTPS</div>
+      </div>
+      <div class="cell">
+        <div class="k">Cadência</div>
+        <div class="v">3× / dia útil</div>
+        <div class="sub">09:30 · 13:00 · 18:30 BRT</div>
+      </div>
+      <div class="cell">
+        <div class="k">Stack</div>
+        <div class="v accent">cron + nginx</div>
+        <div class="sub">Sem FastAPI, sem banco, sem build</div>
+      </div>
+    </div>
+
+    <!-- ============ section 1: diagrama ============ -->
+
+    <section>
+      <div class="sec-head">
+        <span class="num">01</span>
+        <h2>Diagrama da arquitetura</h2>
+      </div>
+      <p class="sec-intro">
+        Três processos no VPS: o <strong>cron</strong> dispara o pipeline nos horários
+        fixos; o <strong>pipeline Python</strong> baixa dados das fontes externas e
+        escreve JSONs no disco; o <strong>nginx</strong> serve esses JSONs e os
+        arquivos do frontend para qualquer browser que abrir o domínio.
+        Não há aplicação Python rodando enquanto o usuário navega — só arquivos.
+      </p>
+
+      <div class="diagram" aria-label="Diagrama da arquitetura">
+        <svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" role="img">
+          <!-- styles inside SVG -->
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#87867F" />
+            </marker>
+            <marker id="arrow-clay" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#D97757" />
+            </marker>
+          </defs>
+
+          <!-- VPS container -->
+          <rect x="20" y="20" width="600" height="500" rx="14"
+                fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5" stroke-dasharray="6 4"/>
+          <text x="36" y="42" font-size="11" fill="#87867F" letter-spacing="1">VPS LINUX</text>
+
+          <!-- External sources (top) -->
+          <rect x="660" y="40" width="210" height="60" rx="10"
+                fill="#F0EEE6" stroke="#D1CFC5" stroke-width="1.5"/>
+          <text x="765" y="65" text-anchor="middle" font-size="13" fill="#141413">Yahoo Finance</text>
+          <text x="765" y="84" text-anchor="middle" font-size="11" fill="#87867F">cotações OHLCV</text>
+
+          <rect x="660" y="120" width="210" height="60" rx="10"
+                fill="#F0EEE6" stroke="#D1CFC5" stroke-width="1.5"/>
+          <text x="765" y="145" text-anchor="middle" font-size="13" fill="#141413">Fundamentus</text>
+          <text x="765" y="164" text-anchor="middle" font-size="11" fill="#87867F">HTML por ticker</text>
+
+          <!-- Cron -->
+          <rect x="50" y="70" width="180" height="70" rx="10"
+                fill="#E3DACC" stroke="#D1CFC5" stroke-width="1.5"/>
+          <text x="140" y="92" text-anchor="middle" font-size="14" fill="#141413" font-weight="600">cron</text>
+          <text x="140" y="111" text-anchor="middle" font-size="11" fill="#3D3D3A">12:30 · 16:00 · 21:30 UTC</text>
+          <text x="140" y="127" text-anchor="middle" font-size="11" fill="#87867F">seg–sex</text>
+
+          <!-- Pipeline Python -->
+          <rect x="270" y="60" width="240" height="90" rx="10"
+                fill="#FFFFFF" stroke="#D97757" stroke-width="2"/>
+          <text x="390" y="83" text-anchor="middle" font-size="14" fill="#141413" font-weight="600">Pipeline Python</text>
+          <text x="390" y="103" text-anchor="middle" font-size="11" fill="#3D3D3A">python -m robusta run</text>
+          <text x="390" y="121" text-anchor="middle" font-size="11" fill="#87867F">--emit-json /var/lib/robusta/runs/</text>
+          <text x="390" y="138" text-anchor="middle" font-size="10.5" fill="#87867F">/opt/robusta + .venv</text>
+
+          <!-- Filesystem (runs/) -->
+          <rect x="270" y="200" width="240" height="160" rx="10"
+                fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+          <text x="390" y="223" text-anchor="middle" font-size="13" fill="#141413" font-weight="600">/var/lib/robusta/runs/</text>
+          <text x="285" y="248" font-size="11" fill="#3D3D3A" font-family="ui-monospace, monospace">latest.json</text>
+          <text x="285" y="267" font-size="11" fill="#3D3D3A" font-family="ui-monospace, monospace">2026-05-25T12-30Z.json</text>
+          <text x="285" y="286" font-size="11" fill="#3D3D3A" font-family="ui-monospace, monospace">2026-05-25T16-00Z.json</text>
+          <text x="285" y="305" font-size="11" fill="#87867F" font-family="ui-monospace, monospace">tickers/PRIO3.json</text>
+          <text x="285" y="324" font-size="11" fill="#87867F" font-family="ui-monospace, monospace">tickers/ASAI3.json</text>
+          <text x="285" y="343" font-size="11" fill="#87867F" font-family="ui-monospace, monospace">tickers/...</text>
+
+          <!-- Frontend static dir -->
+          <rect x="50" y="200" width="180" height="160" rx="10"
+                fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+          <text x="140" y="223" text-anchor="middle" font-size="13" fill="#141413" font-weight="600">/var/www/robusta/</text>
+          <text x="65" y="248" font-size="11" fill="#3D3D3A" font-family="ui-monospace, monospace">index.html</text>
+          <text x="65" y="267" font-size="11" fill="#3D3D3A" font-family="ui-monospace, monospace">ticker.html</text>
+          <text x="65" y="286" font-size="11" fill="#87867F" font-family="ui-monospace, monospace">assets/app.js</text>
+          <text x="65" y="305" font-size="11" fill="#87867F" font-family="ui-monospace, monospace">assets/app.css</text>
+
+          <!-- nginx -->
+          <rect x="160" y="410" width="320" height="80" rx="10"
+                fill="#788C5D" stroke="#5F7048" stroke-width="2"/>
+          <text x="320" y="435" text-anchor="middle" font-size="14" fill="#FFFFFF" font-weight="600">nginx</text>
+          <text x="320" y="455" text-anchor="middle" font-size="11" fill="#E8EAE0">
+            root /var/www/robusta · alias /data/ → runs/
+          </text>
+          <text x="320" y="474" text-anchor="middle" font-size="11" fill="#E8EAE0">
+            HTTPS via Let's Encrypt
+          </text>
+
+          <!-- Browser (outside) -->
+          <rect x="660" y="410" width="210" height="80" rx="10"
+                fill="#FFFFFF" stroke="#D1CFC5" stroke-width="1.5"/>
+          <text x="765" y="437" text-anchor="middle" font-size="14" fill="#141413" font-weight="600">Browser</text>
+          <text x="765" y="457" text-anchor="middle" font-size="11" fill="#3D3D3A">seu-dominio.com</text>
+          <text x="765" y="474" text-anchor="middle" font-size="11" fill="#87867F">fetch('/data/...')</text>
+
+          <!-- Arrows -->
+          <!-- cron -> pipeline -->
+          <line x1="230" y1="105" x2="270" y2="105" stroke="#D97757" stroke-width="2"
+                marker-end="url(#arrow-clay)"/>
+          <!-- pipeline -> Yahoo -->
+          <line x1="510" y1="85" x2="660" y2="70" stroke="#87867F" stroke-width="1.5"
+                marker-end="url(#arrow)"/>
+          <!-- pipeline -> Fundamentus -->
+          <line x1="510" y1="125" x2="660" y2="150" stroke="#87867F" stroke-width="1.5"
+                marker-end="url(#arrow)"/>
+          <!-- pipeline -> runs/ -->
+          <line x1="390" y1="150" x2="390" y2="200" stroke="#D97757" stroke-width="2"
+                marker-end="url(#arrow-clay)"/>
+          <!-- runs/ -> nginx -->
+          <line x1="350" y1="360" x2="290" y2="410" stroke="#87867F" stroke-width="1.5"
+                marker-end="url(#arrow)"/>
+          <!-- /var/www/ -> nginx -->
+          <line x1="200" y1="360" x2="260" y2="410" stroke="#87867F" stroke-width="1.5"
+                marker-end="url(#arrow)"/>
+          <!-- nginx -> Browser -->
+          <line x1="480" y1="450" x2="660" y2="450" stroke="#87867F" stroke-width="1.5"
+                marker-end="url(#arrow)"/>
+        </svg>
+
+        <div class="legend">
+          <span><span class="sw" style="background:#E3DACC"></span> scheduler (cron)</span>
+          <span><span class="sw" style="background:#FFFFFF; border:1.5px solid #D97757"></span> processo Python (executa e morre)</span>
+          <span><span class="sw" style="background:#FFFFFF; border:1.5px solid #D1CFC5"></span> arquivo em disco</span>
+          <span><span class="sw" style="background:#788C5D"></span> servidor sempre ligado (nginx)</span>
+          <span><span class="sw" style="background:#F0EEE6"></span> fonte externa</span>
+        </div>
+
+        <p class="caption">
+          O pipeline é um processo curto: dispara, baixa, grava, termina. Entre execuções
+          o VPS só tem o nginx ativo, servindo arquivos. Nenhum processo Python
+          permanente — sem uvicorn, sem worker, sem fila.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ section 2: layout em disco ============ -->
+
+    <section>
+      <div class="sec-head">
+        <span class="num">02</span>
+        <h2>Layout em disco no VPS</h2>
+      </div>
+      <p class="sec-intro">
+        Três áreas separadas, seguindo a convenção FHS do Linux: código em
+        <code>/opt</code>, estado mutável em <code>/var/lib</code>, conteúdo
+        servido pelo nginx em <code>/var/www</code>. Cada uma tem dono e
+        permissões próprios, e pode ser feita backup ou redeployada independente.
+      </p>
+
+      <div class="tree">
+<pre><span class="dir">/opt/robusta/</span>                  <span class="cm"># código (git clone do repo)</span>
+├── <span class="dir">.venv/</span>                  <span class="cm"># venv Python isolado</span>
+├── <span class="dir">robusta/</span>                <span class="cm"># o pacote Python (já existe)</span>
+├── <span class="dir">scripts/</span>
+│   └── <span class="leaf">run_pipeline.sh</span>     <span class="cm"># wrapper chamado pelo cron</span>
+├── <span class="dir">lista_tickers_liquidos.xlsx</span>
+└── <span class="dir">all_ticker_financial_indicators.xlsx</span>
+
+<span class="dir">/var/lib/robusta/runs/</span>        <span class="cm"># estado: JSONs gerados a cada run</span>
+├── <span class="acc">latest.json</span>             <span class="cm"># cópia da run mais recente (dashboard)</span>
+├── <span class="leaf">2026-05-25T12-30-00Z.json</span>  <span class="cm"># arquivo bruto da execução</span>
+├── <span class="leaf">2026-05-25T16-00-00Z.json</span>
+├── <span class="leaf">2026-05-25T21-30-00Z.json</span>
+└── <span class="dir">tickers/</span>                <span class="cm"># JSON por ticker (drill-down)</span>
+    ├── <span class="acc">PRIO3.json</span>           <span class="cm"># última foto do PRIO3</span>
+    ├── <span class="leaf">ASAI3.json</span>
+    └── <span class="leaf">...</span>
+
+<span class="dir">/var/www/robusta/</span>             <span class="cm"># frontend estático (servido pelo nginx)</span>
+├── <span class="leaf">index.html</span>              <span class="cm"># dashboard</span>
+├── <span class="leaf">ticker.html</span>             <span class="cm"># página de drill-down</span>
+└── <span class="dir">assets/</span>
+    ├── <span class="leaf">app.js</span>              <span class="cm"># vanilla JS, ~200 LoC</span>
+    └── <span class="leaf">app.css</span>
+
+<span class="dir">/etc/cron.d/robusta</span>           <span class="cm"># 3 linhas, uma por horário</span>
+<span class="dir">/etc/nginx/sites-available/robusta</span>  <span class="cm"># server block</span>
+</pre>
+      </div>
+
+      <div class="note">
+        <div class="nt">Por que separar <code>/opt</code>, <code>/var/lib</code> e <code>/var/www</code>?</div>
+        Permite redeployar o código (<code>/opt</code>) sem tocar nos JSONs históricos
+        (<code>/var/lib</code>), e atualizar o frontend (<code>/var/www</code>) sem
+        re-rodar o pipeline. Backup do estado é um <code>tar</code> só de
+        <code>/var/lib/robusta/</code>.
+      </div>
+    </section>
+
+    <!-- ============ section 3: decisões-chave ============ -->
+
+    <section>
+      <div class="sec-head">
+        <span class="num">03</span>
+        <h2>Decisões-chave</h2>
+      </div>
+      <p class="sec-intro">
+        As decisões abaixo definem o caráter da arquitetura. Cada uma é
+        reversível, mas mudá-las implica revisitar várias seções do design.
+      </p>
+
+      <div class="decisions">
+        <div class="row head">
+          <div class="cell">Decisão</div>
+          <div class="cell">Escolha</div>
+          <div class="cell">Por quê</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Camada de serviço</strong></div>
+          <div class="cell">nginx servindo estático</div>
+          <div class="cell why">
+            Sem histórico/filtros server-side, FastAPI vira overhead. JSON +
+            <code>fetch()</code> resolve. Migrar para FastAPI depois é trivial
+            (mesmos JSONs, novo endpoint que os lê).
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Persistência</strong></div>
+          <div class="cell">Arquivos JSON em disco</div>
+          <div class="cell why">
+            Alinhado à Fase 6 do <code>PLAN.md</code>. Sem banco de dados, sem
+            migrations. Cada run é um arquivo imutável; <code>latest.json</code> é
+            sobrescrito atomicamente (write + rename).
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Frontend stack</strong></div>
+          <div class="cell">HTML + vanilla JS</div>
+          <div class="cell why">
+            Dashboard de 1 página + página de ticker — não justifica React/Vue/build
+            step. Sem npm, sem bundler, sem Node no VPS. Carrega em &lt; 50 KB.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Scheduler</strong></div>
+          <div class="cell">cron do sistema</div>
+          <div class="cell why">
+            Já existe, é confiável, logs vão para syslog. Alternativa
+            <code>systemd timer</code> tem features que não precisamos. O comando
+            <code>schedule</code> da Fase 8 do PLAN vira opcional — cron cobre.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>HTTPS</strong></div>
+          <div class="cell">Let's Encrypt via certbot</div>
+          <div class="cell why">
+            Gratuito, renovação automática, padrão de mercado. Configurado uma
+            vez no setup do VPS.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>Deploy de código</strong></div>
+          <div class="cell"><code>git pull</code> + <code>systemctl reload nginx</code></div>
+          <div class="cell why">
+            Sem CI/CD para começar. Você empurra para o GitHub, faz SSH no VPS,
+            roda <code>git pull</code>. Quando virar incômodo, vira um GitHub
+            Action de 10 linhas.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ section 4: fluxo de uma run ============ -->
+
+    <section>
+      <div class="sec-head">
+        <span class="num">04</span>
+        <h2>Fluxo de uma execução (13:00 BRT, terça-feira)</h2>
+      </div>
+      <p class="sec-intro">
+        Sequência cronológica de uma run típica, do gatilho do cron até o JSON
+        aparecer no browser.
+      </p>
+
+      <div class="timeline">
+        <div class="step">
+          <div class="when">T+0s</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>cron dispara <code>run_pipeline.sh</code></h3>
+            <p>Wrapper ativa o venv, exporta variáveis de ambiente e chama
+              <code>python -m robusta run --emit-json /var/lib/robusta/runs/</code>.
+              Saída redirecionada para <code>/var/log/robusta/run.log</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="when">T+0s</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Pipeline lê <code>lista_tickers_liquidos.xlsx</code></h3>
+            <p>~369 tickers carregados. Cache de fundamentos
+              (<code>all_ticker_financial_indicators.xlsx</code>) já está no
+              repo; só re-raspa no 1º dia útil do mês ou com
+              <code>--refresh-fundamentos</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="when">T+1m</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Análise técnica (Yahoo Finance, 1 req/ticker)</h3>
+            <p><code>screener()</code> baixa 5 anos de OHLCV por ticker e calcula
+              MMAs, volatilidade, volume persistente, níveis. <code>tqdm</code>
+              loga progresso no <code>run.log</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="when">T+6m</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Análise fundamentalista (cache, sem rede)</h3>
+            <p><code>adicione_indicadores_e_ranking()</code> recalcula P/L, P/VP,
+              Dív.Líq./VM com preços recém-baixados; ranqueia decis; gera score.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="when">T+6m</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Merge + ranking cross-sectional</h3>
+            <p><code>executa_pipeline()</code> devolve um <code>RunResult</code>
+              (técnica + fundamental + signals).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="when">T+6m</div>
+          <div class="dot-col"><span class="dot"></span><span class="line"></span></div>
+          <div class="body">
+            <h3>Persistência (Fase 6, novo módulo)</h3>
+            <p><code>robusta/persistence.py</code> serializa o <code>RunResult</code>
+              para JSON. Escreve <code>runs/2026-05-25T16-00-00Z.json</code>,
+              quebra em <code>runs/tickers/&lt;ticker&gt;.json</code>, e faz
+              <code>rename</code> atômico para <code>latest.json</code>.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="when">T+6m</div>
+          <div class="dot-col"><span class="dot"></span></div>
+          <div class="body">
+            <h3>Browser do usuário</h3>
+            <p>Próxima vez que você abrir <code>seu-dominio.com</code>, o JS faz
+              <code>fetch('/data/latest.json')</code> e popula o dashboard. Você
+              clica em PRIO3 → <code>fetch('/data/tickers/PRIO3.json')</code> abre
+              o drill-down.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="note warn">
+        <div class="nt">Tratamento de falhas (a detalhar na seção 5 do brainstorm)</div>
+        Se o pipeline falhar no meio, <code>latest.json</code> continua válido
+        (a run anterior). Os JSONs novos só são "comitados" no fim, via
+        <code>rename</code> atômico. Falhas individuais de ticker já são logadas
+        em <code>warnings</code>/<code>failed_tickers</code> dentro do próprio
+        <code>RunResult</code>.
+      </div>
+    </section>
+
+    <!-- ============ section 5: pendências do brainstorm ============ -->
+
+    <section>
+      <div class="sec-head">
+        <span class="num">05</span>
+        <h2>Pendências para as próximas seções do brainstorm</h2>
+      </div>
+      <p class="sec-intro">
+        Esta página cobre só a seção 1/6 do brainstorm (arquitetura geral). As
+        seções seguintes — que ainda vamos debater antes de eu escrever o spec
+        final — são:
+      </p>
+
+      <div class="decisions">
+        <div class="row head">
+          <div class="cell">#</div>
+          <div class="cell">Tópico</div>
+          <div class="cell">O que precisa ser definido</div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>2/6</strong></div>
+          <div class="cell">Contrato JSON</div>
+          <div class="cell why">
+            Quais campos vão em <code>latest.json</code> e em <code>tickers/&lt;ticker&gt;.json</code>;
+            como serializar NaN/Timestamp/numpy; <code>schema_version</code>.
+            Já existe rascunho na seção "JSON And API Contract" do <code>PLAN.md</code>.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>3/6</strong></div>
+          <div class="cell">Conteúdo do dashboard</div>
+          <div class="cell why">
+            Que "destaques" mostrar (top 5 long/short, sinais Vol/Fundamental,
+            distorções, cards de ticker)? Sem ainda decidir, fica vago.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>4/6</strong></div>
+          <div class="cell">Frontend (UI/UX)</div>
+          <div class="cell why">
+            Layout, paleta, mobile responsiveness, comportamento do drill-down,
+            estados de loading/erro.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>5/6</strong></div>
+          <div class="cell">Operação</div>
+          <div class="cell why">
+            Logs, alertas em caso de falha (e-mail? Telegram?), retenção de JSONs
+            antigos, monitoramento básico, atualização do cache mensal.
+          </div>
+        </div>
+        <div class="row">
+          <div class="cell"><strong>6/6</strong></div>
+          <div class="cell">Testes & deploy inicial</div>
+          <div class="cell why">
+            Como testar o emit-JSON sem subir um VPS; passo a passo do
+            primeiro deploy (provisionamento mínimo do VPS + nginx + cron).
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ section 6: perguntas em aberto ============ -->
+
+    <section>
+      <div class="sec-head">
+        <span class="num">06</span>
+        <h2>Perguntas em aberto desta seção</h2>
+      </div>
+      <p class="sec-intro">
+        Antes de avançar para a seção 2/6 (contrato JSON), preciso da sua
+        resposta a três coisas:
+      </p>
+
+      <div class="open-q">
+        <div class="q">
+          <div class="qt">1. Os caminhos <code>/opt/robusta</code>, <code>/var/lib/robusta</code>, <code>/var/www/robusta</code> te servem?</div>
+          <div class="qd">
+            <span class="opt"><strong>Opção A.</strong> Seguir convenção FHS (recomendado): cada coisa em seu lugar canônico, permissões separadas.</span>
+            <span class="opt"><strong>Opção B.</strong> Tudo dentro de <code>/home/seu_usuario/robusta/</code> para simplicidade (não precisa <code>sudo</code> para mexer).</span>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qt">2. Roda só dias úteis ou todo dia?</div>
+          <div class="qd">
+            <span class="opt"><strong>Opção A.</strong> Só seg–sex (recomendado): mercado fechado no fim de semana, dados não mudam, evita gastar quota de API à toa.</span>
+            <span class="opt"><strong>Opção B.</strong> Todo dia: você quer abrir o site sábado e ver alguma coisa atualizada (mesmo que igual à de sexta).</span>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qt">3. Domínio</div>
+          <div class="qd">
+            <span class="opt"><strong>Opção A.</strong> Domínio próprio que você já tem (ex.: <code>robusta.seudominio.com</code>) — você cuida do DNS.</span>
+            <span class="opt"><strong>Opção B.</strong> Vai comprar um (sugiro Cloudflare Registrar ou Registro.br para .com.br).</span>
+            <span class="opt"><strong>Opção C.</strong> Só IP do VPS por enquanto, sem domínio (sem HTTPS válido — funciona, mas browser xinga).</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
