@@ -2,8 +2,8 @@
  * ROBUSTA frontend — vanilla JS, sem framework, sem build.
  *
  * Responsabilidades:
- *   - busca `/data/latest.json` (gerado pelo pipeline Python via persistence.py)
- *   - busca `/data/carteira.json` (lista de tickers da carteira pessoal)
+ *   - busca `./data/latest.json` (gerado pelo pipeline Python via persistence.py)
+ *   - busca `./data/carteira.json` (lista de tickers da carteira pessoal)
  *   - parseia `?ticker=XXXX` da URL para a página de drill-down
  *   - renderiza o dashboard (index.html) e a página do ticker (ticker.html)
  *
@@ -12,8 +12,8 @@
 
 "use strict";
 
-const DATA_URL = "/data/latest.json";
-const CARTEIRA_URL = "/data/carteira.json";
+const DATA_URL = "./data/latest.json";
+const CARTEIRA_URL = "./data/carteira.json";
 
 /* ------------------------------------------------------------------ */
 /*  fetch + parse                                                     */
