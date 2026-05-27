@@ -1,0 +1,44 @@
+name: Deploy site/ to GitHub Pages
+
+on:
+  # dispara quando o bot do run-pipeline.yml commita site/data/latest.*
+  # ou quando voce faz push manual de mudancas em site/ (CSS, HTML, JS).
+  push:
+    branches: [main]
+    paths:
+      - 'site/**'
+      - '.github/workflows/deploy-pages.yml'
+  # deploy manual via UI do Actions
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# evita deploys concorrentes; cancela o anterior se vier outro
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site/ as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
