@@ -1,13 +1,20 @@
 name: Deploy site/ to GitHub Pages
 
 on:
-  # dispara quando o bot do run-pipeline.yml commita site/data/latest.*
-  # ou quando voce faz push manual de mudancas em site/ (CSS, HTML, JS).
+  # push manual de mudancas em site/ (CSS, HTML, JS feito pelo dev).
+  # NOTA: commits do bot (GITHUB_TOKEN) NAO disparam workflows por design
+  # do GitHub. Por isso o trigger `workflow_run` abaixo eh necessario.
   push:
     branches: [main]
     paths:
       - 'site/**'
       - '.github/workflows/deploy-pages.yml'
+  # encadeamento: roda apos o run-pipeline.yml terminar com sucesso.
+  # Esse trigger funciona mesmo com commits do GITHUB_TOKEN.
+  workflow_run:
+    workflows: ['ROBUSTA pipeline (3x/dia)']
+    types: [completed]
+    branches: [main]
   # deploy manual via UI do Actions
   workflow_dispatch:
 
@@ -23,6 +30,9 @@ concurrency:
 
 jobs:
   deploy:
+    # quando disparado por workflow_run, so executa se o pipeline upstream
+    # foi success (nao roda em failure/cancelled)
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -30,6 +40,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # workflow_run usa SHA do disparador; precisamos do main mais recente
+          # pra pegar o commit do bot com latest.json fresco
+          ref: main
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
