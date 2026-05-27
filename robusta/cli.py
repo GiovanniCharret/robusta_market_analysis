@@ -1,13 +1,10 @@
-"""CLI minimo do ROBUSTA (fatia antecipada da Fase 8).
+"""CLI do ROBUSTA. Uso:
 
-Permite rodar o pipeline de ponta a ponta e, opcionalmente, exportar o
-DataFrame merged para xlsx (opt-in via flag, conforme o PLAN: export Excel so
-atras de flag explicita). Uso:
-
-    python -m robusta run                          # roda a lista INTEIRA do Excel
-    python -m robusta run --export-xlsx saida.xlsx
-    python -m robusta run --tickers PRIO3 ASAI3    # subconjunto so para dev/debug
-    python -m robusta run --refresh-fundamentos    # forca raspagem do Fundamentus
+    python -m robusta run                              # lista inteira do Excel
+    python -m robusta run --emit-latest                # grava latest.json + latest.xlsx
+    python -m robusta run --export-xlsx saida.xlsx     # export manual ad-hoc
+    python -m robusta run --tickers PRIO3 ASAI3        # subconjunto so para dev/debug
+    python -m robusta run --refresh-fundamentos        # forca raspagem do Fundamentus
 
 Por padrao o universo e a lista completa de `lista_tickers_liquidos.xlsx`
 (`data.ler_lista_tickers`). O `--tickers` e apenas um override de
@@ -19,15 +16,19 @@ em `all_ticker_financial_indicators.xlsx`). `--refresh-fundamentos` ignora a
 regra e raspa imediatamente — util para mudanca de ticker, divulgacao de
 resultados ou conferencia manual de valores.
 
+`--emit-latest CAMINHO` grava `latest.json` + `latest.xlsx` na pasta indicada
+(default: `~/robusta/var/`), usando o modulo `persistence`. E o que o cron
+chama em producao.
+
 Roda chamadas de rede reais (Yahoo Finance + Fundamentus) e pode sofrer
-rate-limit. A CLI completa (`run`/`api`/`schedule`) e os logs definitivos sao
-da Fase 8.
+rate-limit.
 """
 
 import argparse
 import logging
+from pathlib import Path
 
-from robusta import data, pipeline
+from robusta import data, persistence, pipeline
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +55,12 @@ def _comando_run(args):
         resultado.merged_results.to_excel(args.export_xlsx, index=False)
         print(f"merged exportado para {args.export_xlsx}")
 
+    if args.emit_latest is not None:
+        # `--emit-latest` sem argumento usa o default; com argumento usa o caminho.
+        pasta = Path(args.emit_latest) if args.emit_latest else Path.home() / "robusta" / "var"
+        persistence.grava_latest(resultado, pasta)
+        print(f"latest.json + latest.xlsx gravados em {pasta}")
+
 
 def construir_parser():
     parser = argparse.ArgumentParser(
@@ -69,12 +76,16 @@ def construir_parser():
     )
     p_run.add_argument(
         "--export-xlsx", metavar="CAMINHO",
-        help="Exporta o DataFrame merged para um .xlsx (opt-in).",
+        help="Exporta o DataFrame merged para um .xlsx ad-hoc (opt-in).",
     )
     p_run.add_argument(
         "--refresh-fundamentos", action="store_true",
-        help="Forca raspagem do Fundamentus mesmo fora do 1o dia util do mes "
-             "(ex: mudanca de ticker, divulgacao de resultados, conferencia).",
+        help="Forca raspagem do Fundamentus mesmo fora do 1o dia util do mes.",
+    )
+    p_run.add_argument(
+        "--emit-latest", nargs="?", const="", default=None, metavar="PASTA",
+        help="Grava latest.json + latest.xlsx para o frontend consumir. "
+             "Sem argumento: ~/robusta/var/. Com argumento: usa o caminho.",
     )
     p_run.set_defaults(func=_comando_run)
     return parser

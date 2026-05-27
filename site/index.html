@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROBUSTA</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+  <main class="app">
+    <a href="./data/latest.xlsx" download="robusta-latest.xlsx" class="download-btn">
+      <span class="arrow">↓</span>excel
+    </a>
+
+    <div class="brand-center">
+      <div class="name">ROBUSTA<span class="v" id="brand-version"></span></div>
+    </div>
+    <div class="run-stamp" id="run-stamp">carregando…</div>
+
+    <div class="lists" id="lists" hidden>
+      <div class="col">
+        <div class="col-title">long</div>
+        <div class="col-sub">%_to_MMA50</div>
+        <div id="long-list"></div>
+      </div>
+      <div class="col">
+        <div class="col-title">short</div>
+        <div class="col-sub">%_to_MMA50</div>
+        <div id="short-list"></div>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <form class="search-line" id="search-form" hidden>
+      <span class="label">ticker</span>
+      <input
+        type="text"
+        id="search-input"
+        placeholder="consultar outro ticker (ex.: PETR4)"
+        autocomplete="off"
+        spellcheck="false">
+    </form>
+  </main>
+
+  <script src="assets/app.js"></script>
+  <script>
+    (async function () {
+      const $ = (id) => document.getElementById(id);
+
+      function renderRow(item, todosTickers) {
+        const ticker = item.ticker;
+        const pct = todosTickers[ticker]?.pct_to_mma50;
+        const val = window.ROBUSTA.formataPercentual(pct);
+        const cls = (pct ?? 0) >= 0 ? "up" : "down";
+        const a = document.createElement("a");
+        a.className = "row";
+        a.href = window.ROBUSTA.urlDoTicker(ticker);
+        a.innerHTML =
+          `<span class="tk">${ticker}</span>` +
+          `<span class="val ${cls}">${val}</span>`;
+        return a;
+      }
+
+      try {
+        const dados = await window.ROBUSTA.carregaDados();
+
+        $("brand-version").textContent = dados.robusta_version
+          ? `v${dados.robusta_version}` : "";
+        $("run-stamp").textContent = window.ROBUSTA.formataData(dados.generatedAt);
+
+        const longList = $("long-list");
+        const shortList = $("short-list");
+        (dados.signals.longs || []).forEach((it) => longList.appendChild(renderRow(it, dados.tickers)));
+        (dados.signals.shorts || []).forEach((it) => shortList.appendChild(renderRow(it, dados.tickers)));
+
+        $("lists").hidden = false;
+        $("search-form").hidden = false;
+
+        $("search-form").addEventListener("submit", (e) => {
+          e.preventDefault();
+          const t = $("search-input").value.toUpperCase().trim();
+          if (t) window.location.href = window.ROBUSTA.urlDoTicker(t);
+        });
+      } catch (err) {
+        console.error(err);
+        $("status").classList.add("error");
+        $("status").textContent = "Falha ao carregar dados: " + err.message;
+      }
+    })();
+  </script>
+</body>
+</html>

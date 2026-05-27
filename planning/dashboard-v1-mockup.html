@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROBUSTA — Dashboard V1 (mockup com dados fake)</title>
+  <style>
+    :root {
+      --ivory:    #FAF9F5;
+      --slate:    #141413;
+      --clay:     #D97757;
+      --oat:      #E3DACC;
+      --olive:    #788C5D;
+      --rust:     #8A3B1E;
+      --gray-150: #F0EEE6;
+      --gray-300: #D1CFC5;
+      --gray-500: #87867F;
+      --gray-700: #3D3D3A;
+      --white:    #FFFFFF;
+
+      --serif: ui-serif, Georgia, 'Times New Roman', serif;
+      --sans:  system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      --mono:  ui-monospace, 'SF Mono', Menlo, Monaco, monospace;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--sans);
+      background: var(--ivory);
+      color: var(--gray-700);
+      line-height: 1.55;
+      padding: 56px 32px 120px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page { max-width: 1120px; margin: 0 auto; }
+
+    /* ---------- header da página de mockup ---------- */
+
+    header.page-head { margin-bottom: 48px; max-width: 860px; }
+    .eyebrow {
+      font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--gray-500); margin-bottom: 12px;
+    }
+    h1 {
+      font-family: var(--serif); font-weight: 500; font-size: 38px;
+      line-height: 1.15; color: var(--slate); margin-bottom: 18px;
+      letter-spacing: -0.01em;
+    }
+    .lede { font-size: 15.5px; color: var(--gray-700); margin-bottom: 18px; max-width: 760px; }
+    .status-tag {
+      display: inline-block; font-family: var(--mono); font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      background: var(--oat); color: var(--slate);
+      padding: 4px 10px; border-radius: 6px;
+    }
+    code {
+      font-family: var(--mono); font-size: 0.88em;
+      background: var(--gray-150); border: 1px solid var(--gray-300);
+      border-radius: 4px; padding: 1px 5px;
+    }
+
+    /* ---------- moldura "browser" ---------- */
+
+    .screen-wrap { margin: 28px 0 64px; }
+    .screen-label {
+      font-family: var(--mono); font-size: 11px; text-transform: uppercase;
+      letter-spacing: 0.06em; color: var(--gray-500); margin-bottom: 8px;
+    }
+    .browser {
+      background: var(--white);
+      border: 1.5px solid var(--gray-300);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .browser-bar {
+      background: var(--gray-150);
+      border-bottom: 1px solid var(--gray-300);
+      padding: 10px 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .dot { width: 11px; height: 11px; border-radius: 50%; background: var(--gray-300); }
+    .url {
+      flex: 1; background: var(--white); border: 1px solid var(--gray-300);
+      border-radius: 6px; padding: 4px 12px; margin-left: 10px;
+      font-family: var(--mono); font-size: 12px; color: var(--gray-700);
+    }
+
+    /* ====================================================================
+       DASHBOARD (index.html)
+       ==================================================================== */
+
+    .app {
+      background: var(--white);
+      padding: 96px 36px 72px;
+      min-height: 520px;
+      position: relative;
+    }
+    .download-btn {
+      position: absolute;
+      top: 24px;
+      right: 28px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--gray-500);
+      text-decoration: none;
+      padding: 6px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 6px;
+      transition: all 0.12s;
+      letter-spacing: 0.02em;
+    }
+    .download-btn:hover {
+      color: var(--clay);
+      border-color: var(--clay);
+    }
+    .download-btn .arrow { margin-right: 4px; }
+    .brand-center { text-align: center; margin-bottom: 14px; }
+    .brand-center .name {
+      font-family: var(--serif); font-weight: 500; font-size: 44px;
+      color: var(--slate); letter-spacing: -0.02em;
+    }
+    .brand-center .v {
+      font-family: var(--mono); font-size: 11px; color: var(--gray-500);
+      margin-left: 6px; vertical-align: 18px;
+    }
+    .run-stamp {
+      text-align: center; font-family: var(--mono); font-size: 12px;
+      color: var(--gray-500); margin-bottom: 72px; letter-spacing: 0.02em;
+    }
+    .lists {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 96px;
+      max-width: 540px; margin: 0 auto;
+    }
+    @media (max-width: 640px) {
+      .lists { grid-template-columns: 1fr; gap: 48px; max-width: 260px; }
+    }
+    .col-title {
+      font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
+      letter-spacing: 0.12em; color: var(--gray-500);
+      text-align: center; margin-bottom: 24px; padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .row {
+      display: flex; align-items: baseline; justify-content: space-between;
+      padding: 10px 4px; cursor: pointer;
+      border-bottom: 1px solid var(--gray-150);
+      transition: background 0.08s;
+    }
+    .row:hover { background: var(--gray-150); }
+    .row:last-child { border-bottom: none; }
+    .row .tk {
+      font-family: var(--mono); font-size: 17px; font-weight: 600;
+      color: var(--slate); letter-spacing: 0.02em;
+    }
+    .row .val {
+      font-family: var(--mono); font-size: 17px; font-weight: 600;
+    }
+    .row .val.up   { color: var(--olive); }
+    .row .val.down { color: var(--rust); }
+
+    .search-line {
+      max-width: 420px; margin: 80px auto 0;
+      display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--gray-300); padding-bottom: 8px;
+    }
+    .search-line input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-family: var(--mono); font-size: 14px; color: var(--slate); padding: 4px 0;
+    }
+    .search-line input::placeholder { color: var(--gray-500); }
+    .search-line .label {
+      font-family: var(--mono); font-size: 11px; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: 0.08em;
+    }
+
+    /* ====================================================================
+       TICKER PAGE (ticker.html)
+       ==================================================================== */
+
+    .tk-app {
+      background: var(--white);
+      padding: 56px 56px 72px;
+    }
+    @media (max-width: 640px) { .tk-app { padding: 40px 24px; } }
+
+    .tk-crumb {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--mono); font-size: 11.5px;
+      color: var(--gray-500); margin-bottom: 40px; letter-spacing: 0.02em;
+    }
+    .tk-crumb a { color: var(--clay); text-decoration: none; }
+    .tk-crumb a:hover { text-decoration: underline; }
+    .tk-crumb .download-btn {
+      position: static;
+      color: var(--gray-500);
+      border: 1px solid var(--gray-300);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11.5px;
+    }
+    .tk-crumb .download-btn:hover {
+      color: var(--clay);
+      border-color: var(--clay);
+      text-decoration: none;
+    }
+
+    .tk-head {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 24px; margin-bottom: 6px;
+    }
+    .tk-head .name {
+      font-family: var(--mono); font-size: 44px; font-weight: 700;
+      color: var(--slate); letter-spacing: 0.01em;
+    }
+    .tk-head .name .pin {
+      font-family: var(--mono); font-size: 11px; color: var(--clay);
+      vertical-align: 16px; margin-left: 10px; letter-spacing: 0.08em;
+    }
+    .tk-head .price {
+      font-family: var(--mono); font-size: 32px; color: var(--slate);
+      font-weight: 500;
+    }
+    .tk-sub {
+      display: flex; justify-content: space-between;
+      font-family: var(--mono); font-size: 12px; color: var(--gray-500);
+      padding-bottom: 28px; margin-bottom: 56px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+
+    section.block { margin-bottom: 64px; }
+    section.block:last-child { margin-bottom: 0; }
+    .block-title {
+      font-family: var(--mono); font-size: 10.5px;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      color: var(--gray-500); margin-bottom: 24px;
+    }
+
+    /* ---- bloco do ticker buscado ---- */
+
+    .fund-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px; }
+    @media (max-width: 720px) { .fund-row { grid-template-columns: 1fr; gap: 24px; } }
+    .stat .k {
+      font-family: var(--mono); font-size: 11px; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px;
+    }
+    .stat .v {
+      font-family: var(--mono); font-size: 36px;
+      color: var(--slate); font-weight: 600; line-height: 1;
+    }
+    .stat .v.accent { color: var(--clay); }
+    .stat .v.up   { color: var(--olive); }
+    .stat .v.down { color: var(--rust); }
+    .stat .sub {
+      font-family: var(--mono); font-size: 11px; color: var(--gray-500); margin-top: 6px;
+    }
+
+    .ruler { margin-top: 8px; padding: 36px 0 14px; }
+    .ruler svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+    .meta-pair { display: flex; gap: 56px; margin-top: 36px; }
+    @media (max-width: 640px) { .meta-pair { flex-direction: column; gap: 18px; } }
+    .meta-pair .item .k {
+      font-family: var(--mono); font-size: 11px; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+    }
+    .meta-pair .item .v {
+      font-family: var(--mono); font-size: 20px; color: var(--slate); font-weight: 600;
+    }
+
+    /* ---- bloco da carteira (tabela compacta) ---- */
+
+    .carteira {
+      border-top: 1px solid var(--gray-300);
+      padding-top: 40px;
+    }
+    .carteira-table {
+      display: grid;
+      grid-template-columns: 110px 90px 70px 100px 1fr 90px;
+      gap: 0;
+      font-family: var(--mono);
+      align-items: center;
+    }
+    @media (max-width: 820px) {
+      .carteira-table { grid-template-columns: 90px 70px 50px 80px 1fr 70px; font-size: 11px; }
+    }
+    .carteira-table .h {
+      font-size: 10.5px; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0 12px 12px 12px;
+      border-bottom: 1px solid var(--gray-300);
+    }
+    .carteira-table .h.r { text-align: right; }
+    .carteira-table .h.c { text-align: center; }
+
+    .carteira-table .c-row {
+      display: contents;
+      cursor: pointer;
+    }
+    .carteira-table .c-row > div {
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--gray-150);
+      transition: background 0.08s;
+    }
+    .carteira-table .c-row:hover > div { background: var(--gray-150); }
+    .carteira-table .c-row:last-child > div { border-bottom: none; }
+    .carteira-table .c-row.active > div {
+      background: #FBF1ED;
+    }
+    .carteira-table .c-row.active .c-tk { color: var(--clay); }
+
+    .c-tk { font-size: 14px; font-weight: 700; color: var(--slate); letter-spacing: 0.02em; }
+    .c-score { font-size: 16px; font-weight: 600; color: var(--clay); text-align: right; }
+    .c-sig {
+      font-size: 14px; font-weight: 600; text-align: center;
+    }
+    .c-sig.up { color: var(--olive); }
+    .c-sig.down { color: var(--rust); }
+    .c-sig.neu { color: var(--gray-500); }
+    .c-pos {
+      font-size: 12px; color: var(--gray-700);
+    }
+    .c-pos.melhor { color: var(--olive); }
+    .c-pos.pior   { color: var(--rust); }
+    .c-pos.dash   { color: var(--gray-300); }
+    .c-mini { padding: 8px 12px !important; }
+    .c-mini svg { display: block; width: 100%; height: 26px; overflow: visible; }
+    .c-price { font-size: 13px; color: var(--gray-700); text-align: right; }
+
+    /* ---------- notas ---------- */
+
+    .notes {
+      max-width: 860px; margin-top: 28px;
+      background: var(--gray-150); border: 1px solid var(--gray-300);
+      border-left: 4px solid var(--olive); border-radius: 10px;
+      padding: 18px 22px;
+    }
+    .notes h4 {
+      font-family: var(--serif); font-weight: 500; font-size: 18px;
+      color: var(--slate); margin-bottom: 10px;
+    }
+    .notes ul { margin: 0 0 0 20px; }
+    .notes li { font-size: 13.5px; margin-bottom: 6px; }
+    .notes li code { background: var(--white); }
+    .notes .json-spec {
+      background: var(--slate); color: #E8E6DE;
+      border-radius: 8px; padding: 12px 16px; margin-top: 12px;
+      font-family: var(--mono); font-size: 12.5px; overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+
+    <header class="page-head">
+      <div class="eyebrow">Brainstorm · seção 3/6 + 4/6 (revisão 3)</div>
+      <h1>Dashboard V1 — agora com comparação contra carteira</h1>
+      <p class="lede">
+        Novidade nesta revisão: a página do ticker mostra um bloco
+        <strong>"Sua carteira"</strong> com os 6 papéis do seu portfolio,
+        usando exatamente os mesmos indicadores do ticker buscado para você bater
+        o olho e comparar. A carteira é alimentada por um JSON manual simples
+        (descrito nas notas embaixo). Números fictícios.
+      </p>
+      <span class="status-tag">Status: mockup · revisão 3 · aguardando feedback</span>
+    </header>
+
+    <!-- ================================================================
+         TELA 1: DASHBOARD (igual à revisão anterior)
+         ================================================================ -->
+
+    <div class="screen-wrap">
+      <div class="screen-label">Tela 1 · index.html · dashboard</div>
+      <div class="browser">
+        <div class="browser-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="url">https://robusta.seudominio.com/</span>
+        </div>
+        <div class="app">
+          <a href="#" class="download-btn"><span class="arrow">↓</span>excel</a>
+          <div class="brand-center">
+            <div class="name">ROBUSTA<span class="v">v13</span></div>
+          </div>
+          <div class="run-stamp">25 mai 2026 · 13:00 BRT</div>
+          <div class="lists">
+            <div class="col">
+              <div class="col-title">long</div>
+              <div class="row"><span class="tk">PRIO3</span><span class="val up">+47</span></div>
+              <div class="row"><span class="tk">ASAI3</span><span class="val up">+42</span></div>
+              <div class="row"><span class="tk">LREN3</span><span class="val up">+38</span></div>
+            </div>
+            <div class="col">
+              <div class="col-title">short</div>
+              <div class="row"><span class="tk">VALE3</span><span class="val down">−14</span></div>
+              <div class="row"><span class="tk">WEGE3</span><span class="val down">−9</span></div>
+              <div class="row"><span class="tk">ITUB4</span><span class="val down">−6</span></div>
+            </div>
+          </div>
+          <div class="search-line">
+            <span class="label">ticker</span>
+            <input type="text" placeholder="consultar outro ticker (ex.: PETR4)" disabled>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         TELA 2: TICKER PAGE (PRIO3) + COMPARAÇÃO COM CARTEIRA
+         ================================================================ -->
+
+    <div class="screen-wrap">
+      <div class="screen-label">Tela 2 · ticker.html?ticker=PRIO3</div>
+      <div class="browser">
+        <div class="browser-bar">
+          <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+          <span class="url">https://robusta.seudominio.com/ticker.html?ticker=PRIO3</span>
+        </div>
+
+        <div class="tk-app">
+
+          <div class="tk-crumb">
+            <a href="#">← ROBUSTA</a>
+            <a href="#" class="download-btn"><span class="arrow">↓</span> excel</a>
+          </div>
+
+          <div class="tk-head">
+            <div class="name">PRIO3<span class="pin">● na carteira</span></div>
+            <div class="price">R$ 19,78</div>
+          </div>
+          <div class="tk-sub">
+            <span>Petróleo, Gás e Biocombustíveis</span>
+            <span>último fechamento · 22/05/2026</span>
+          </div>
+
+          <!-- bloco 1: avaliação fundamentalista do ticker buscado -->
+          <section class="block">
+            <div class="block-title">ticker buscado · avaliação fundamentalista</div>
+            <div class="fund-row">
+              <div class="stat">
+                <div class="k">score</div>
+                <div class="v accent">47</div>
+                <div class="sub">escala 4–40 (geral) · soma das classes 1–10</div>
+              </div>
+              <div class="stat">
+                <div class="k">sinal</div>
+                <div class="v up">+1</div>
+                <div class="sub">compra (score ≥ 32)</div>
+              </div>
+              <div class="stat">
+                <div class="k">posição setorial</div>
+                <div class="v">melhor</div>
+                <div class="sub">vs pares do setor</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- bloco 2: régua completa do ticker buscado -->
+          <section class="block">
+            <div class="block-title">suporte · preço · resistência</div>
+            <div class="ruler">
+              <svg viewBox="0 0 880 110" xmlns="http://www.w3.org/2000/svg" role="img">
+                <line x1="40" y1="55" x2="840" y2="55" stroke="#D1CFC5" stroke-width="1.5"/>
+                <line x1="40" y1="40" x2="40" y2="70" stroke="#788C5D" stroke-width="2"/>
+                <text x="40" y="92" text-anchor="middle" font-size="12" fill="#3D3D3A" font-family="ui-monospace, monospace">R$ 17,20</text>
+                <text x="40" y="106" text-anchor="middle" font-size="10" fill="#87867F" font-family="ui-monospace, monospace">sup_min</text>
+                <line x1="155" y1="40" x2="155" y2="70" stroke="#788C5D" stroke-width="2"/>
+                <text x="155" y="92" text-anchor="middle" font-size="12" fill="#3D3D3A" font-family="ui-monospace, monospace">R$ 18,10</text>
+                <text x="155" y="106" text-anchor="middle" font-size="10" fill="#87867F" font-family="ui-monospace, monospace">sup_med</text>
+                <line x1="345" y1="40" x2="345" y2="70" stroke="#788C5D" stroke-width="2"/>
+                <text x="345" y="92" text-anchor="middle" font-size="12" fill="#3D3D3A" font-family="ui-monospace, monospace">R$ 19,40</text>
+                <text x="345" y="106" text-anchor="middle" font-size="10" fill="#87867F" font-family="ui-monospace, monospace">sup_max</text>
+                <circle cx="475" cy="55" r="9" fill="#D97757" stroke="#FFFFFF" stroke-width="3"/>
+                <text x="475" y="32" text-anchor="middle" font-size="14" fill="#141413" font-family="ui-monospace, monospace" font-weight="700">R$ 19,78</text>
+                <text x="475" y="18" text-anchor="middle" font-size="10" fill="#D97757" font-family="ui-monospace, monospace" letter-spacing="1">PREÇO</text>
+                <line x1="585" y1="40" x2="585" y2="70" stroke="#8A3B1E" stroke-width="2"/>
+                <text x="585" y="92" text-anchor="middle" font-size="12" fill="#3D3D3A" font-family="ui-monospace, monospace">R$ 20,50</text>
+                <text x="585" y="106" text-anchor="middle" font-size="10" fill="#87867F" font-family="ui-monospace, monospace">res_min</text>
+                <line x1="700" y1="40" x2="700" y2="70" stroke="#8A3B1E" stroke-width="2"/>
+                <text x="700" y="92" text-anchor="middle" font-size="12" fill="#3D3D3A" font-family="ui-monospace, monospace">R$ 21,80</text>
+                <text x="700" y="106" text-anchor="middle" font-size="10" fill="#87867F" font-family="ui-monospace, monospace">res_med</text>
+                <line x1="840" y1="40" x2="840" y2="70" stroke="#8A3B1E" stroke-width="2"/>
+                <text x="840" y="92" text-anchor="middle" font-size="12" fill="#3D3D3A" font-family="ui-monospace, monospace">R$ 23,40</text>
+                <text x="840" y="106" text-anchor="middle" font-size="10" fill="#87867F" font-family="ui-monospace, monospace">res_max</text>
+              </svg>
+            </div>
+            <div class="meta-pair">
+              <div class="item">
+                <div class="k">std_raking_value</div>
+                <div class="v">2 / 3</div>
+              </div>
+              <div class="item">
+                <div class="k">momentum_break</div>
+                <div class="v">0</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- bloco 3: carteira -->
+          <section class="block carteira">
+            <div class="block-title">sua carteira · mesmos indicadores · clique pra abrir</div>
+
+            <div class="carteira-table" role="table">
+              <div class="h">ticker</div>
+              <div class="h r">score</div>
+              <div class="h c">sinal</div>
+              <div class="h">posição</div>
+              <div class="h">suporte · preço · resistência</div>
+              <div class="h r">preço</div>
+
+              <!-- LREN3 -->
+              <div class="c-row">
+                <div class="c-tk">LREN3</div>
+                <div class="c-score">38</div>
+                <div class="c-sig neu">0</div>
+                <div class="c-pos dash">—</div>
+                <div class="c-mini">
+                  <svg viewBox="0 0 320 26">
+                    <line x1="6" y1="13" x2="314" y2="13" stroke="#D1CFC5" stroke-width="1"/>
+                    <line x1="6" y1="6" x2="6" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="60" y1="6" x2="60" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="120" y1="6" x2="120" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <circle cx="160" cy="13" r="5" fill="#D97757" stroke="#FFFFFF" stroke-width="2"/>
+                    <line x1="210" y1="6" x2="210" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="260" y1="6" x2="260" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="314" y1="6" x2="314" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                  </svg>
+                </div>
+                <div class="c-price">R$ 16,42</div>
+              </div>
+
+              <!-- ASAI3 -->
+              <div class="c-row">
+                <div class="c-tk">ASAI3</div>
+                <div class="c-score">42</div>
+                <div class="c-sig up">+1</div>
+                <div class="c-pos melhor">melhor</div>
+                <div class="c-mini">
+                  <svg viewBox="0 0 320 26">
+                    <line x1="6" y1="13" x2="314" y2="13" stroke="#D1CFC5" stroke-width="1"/>
+                    <line x1="6" y1="6" x2="6" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="40" y1="6" x2="40" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="95" y1="6" x2="95" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <circle cx="120" cy="13" r="5" fill="#D97757" stroke="#FFFFFF" stroke-width="2"/>
+                    <line x1="175" y1="6" x2="175" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="240" y1="6" x2="240" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="314" y1="6" x2="314" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                  </svg>
+                </div>
+                <div class="c-price">R$ 9,84</div>
+              </div>
+
+              <!-- GOAU4 -->
+              <div class="c-row">
+                <div class="c-tk">GOAU4</div>
+                <div class="c-score">22</div>
+                <div class="c-sig neu">0</div>
+                <div class="c-pos pior">pior</div>
+                <div class="c-mini">
+                  <svg viewBox="0 0 320 26">
+                    <line x1="6" y1="13" x2="314" y2="13" stroke="#D1CFC5" stroke-width="1"/>
+                    <line x1="6" y1="6" x2="6" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="70" y1="6" x2="70" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="150" y1="6" x2="150" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <circle cx="210" cy="13" r="5" fill="#D97757" stroke="#FFFFFF" stroke-width="2"/>
+                    <line x1="245" y1="6" x2="245" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="285" y1="6" x2="285" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="314" y1="6" x2="314" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                  </svg>
+                </div>
+                <div class="c-price">R$ 11,07</div>
+              </div>
+
+              <!-- PRIO3 (ativo / linha do ticker buscado) -->
+              <div class="c-row active">
+                <div class="c-tk">PRIO3</div>
+                <div class="c-score">47</div>
+                <div class="c-sig up">+1</div>
+                <div class="c-pos melhor">melhor</div>
+                <div class="c-mini">
+                  <svg viewBox="0 0 320 26">
+                    <line x1="6" y1="13" x2="314" y2="13" stroke="#D1CFC5" stroke-width="1"/>
+                    <line x1="6" y1="6" x2="6" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="48" y1="6" x2="48" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="118" y1="6" x2="118" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <circle cx="167" cy="13" r="5" fill="#D97757" stroke="#FFFFFF" stroke-width="2"/>
+                    <line x1="208" y1="6" x2="208" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="257" y1="6" x2="257" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="314" y1="6" x2="314" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                  </svg>
+                </div>
+                <div class="c-price">R$ 19,78</div>
+              </div>
+
+              <!-- KBLN11 -->
+              <div class="c-row">
+                <div class="c-tk">KBLN11</div>
+                <div class="c-score">32</div>
+                <div class="c-sig up">+1</div>
+                <div class="c-pos dash">—</div>
+                <div class="c-mini">
+                  <svg viewBox="0 0 320 26">
+                    <line x1="6" y1="13" x2="314" y2="13" stroke="#D1CFC5" stroke-width="1"/>
+                    <line x1="6" y1="6" x2="6" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="80" y1="6" x2="80" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="140" y1="6" x2="140" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <circle cx="180" cy="13" r="5" fill="#D97757" stroke="#FFFFFF" stroke-width="2"/>
+                    <line x1="220" y1="6" x2="220" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="270" y1="6" x2="270" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="314" y1="6" x2="314" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                  </svg>
+                </div>
+                <div class="c-price">R$ 8,21</div>
+              </div>
+
+              <!-- POMO4 -->
+              <div class="c-row">
+                <div class="c-tk">POMO4</div>
+                <div class="c-score">18</div>
+                <div class="c-sig down">−1</div>
+                <div class="c-pos pior">pior</div>
+                <div class="c-mini">
+                  <svg viewBox="0 0 320 26">
+                    <line x1="6" y1="13" x2="314" y2="13" stroke="#D1CFC5" stroke-width="1"/>
+                    <line x1="6" y1="6" x2="6" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="55" y1="6" x2="55" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <line x1="180" y1="6" x2="180" y2="20" stroke="#788C5D" stroke-width="1.5"/>
+                    <circle cx="245" cy="13" r="5" fill="#D97757" stroke="#FFFFFF" stroke-width="2"/>
+                    <line x1="275" y1="6" x2="275" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="295" y1="6" x2="295" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                    <line x1="314" y1="6" x2="314" y2="20" stroke="#8A3B1E" stroke-width="1.5"/>
+                  </svg>
+                </div>
+                <div class="c-price">R$ 4,12</div>
+              </div>
+
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+         NOTAS DE DESIGN
+         ================================================================ -->
+
+    <div class="notes">
+      <h4>Botão de download do Excel</h4>
+      <ul>
+        <li>Disponível em <strong>ambas as telas</strong>: canto superior direito no dashboard, mesma linha do breadcrumb na página do ticker.</li>
+        <li>Implementação: o cron passa a rodar <code>python -m robusta run --export-xlsx ~/robusta/var/latest.xlsx</code> a cada execução, gerando o XLSX ao lado do <code>latest.json</code>. nginx serve <code>/data/latest.xlsx</code>. Botão é um <code>&lt;a download&gt;</code> puro, sem JS.</li>
+        <li>O Excel contém o <code>merged_results</code> completo (todos os tickers do universo + todas as colunas técnica + fundamentalista), mesmo conteúdo que a flag <code>--export-xlsx</code> já produz hoje.</li>
+        <li>Nome do download: <code>robusta-latest.xlsx</code>.</li>
+      </ul>
+      <h4 style="margin-top: 18px;">O que mudou na revisão anterior (carteira)</h4>
+      <ul>
+        <li><strong>Bloco "Sua carteira"</strong> aparece embaixo da régua do ticker buscado, como tabela compacta.</li>
+        <li>Cada linha mostra <strong>os mesmos indicadores</strong> do ticker buscado, alinhados em colunas: <code>score</code>, <code>sinal</code>, <code>posição setorial</code>, <strong>mini-régua S/R</strong>, preço.</li>
+        <li>A <strong>mini-régua</strong> usa as mesmas cores da régua grande (verde-oliva = suportes, marrom = resistências, círculo clay = preço) — só sem labels numéricos. Bate o olho e vê "o preço tá colado na resistência?" ou "tem folga até o próximo suporte?".</li>
+        <li>A linha do ticker que você está vendo (PRIO3 neste mockup) fica <strong>destacada</strong> (fundo levemente clay, ticker em clay).</li>
+        <li>Se o ticker buscado <strong>está na carteira</strong>, aparece um pin discreto "● na carteira" ao lado do nome no header.</li>
+        <li><strong>Cliques nas linhas da carteira</strong> navegam pra <code>ticker.html?ticker=XXXX</code> — a mesma página, recarregada com outro ticker. Você não precisa voltar pro dashboard pra trocar.</li>
+      </ul>
+
+      <p style="margin-top: 14px; font-size: 13.5px;">
+        <strong>Como a carteira é alimentada:</strong> um arquivo JSON manual em
+        <code>~/robusta/var/carteira.json</code> que o frontend lê via
+        <code>fetch('/carteira.json')</code>. Você edita à mão quando comprar/vender.
+        Formato:
+      </p>
+      <pre class="json-spec">{
+  "tickers": ["LREN3", "ASAI3", "GOAU4", "PRIO3", "KBLN11", "POMO4"]
+}</pre>
+      <p style="margin-top: 10px; font-size: 13px; color: var(--gray-500);">
+        (Padronizei pra array simples em vez do dict <code>{"1":"lren3"...}</code> —
+        mais limpo no JS, sem chaves numéricas sem semântica. Mas se preferir manter
+        o formato original, é só ajustar o leitor.)
+      </p>
+    </div>
+
+  </main>
+</body>
+</html>

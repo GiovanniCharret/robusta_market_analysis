@@ -1,13 +1,55 @@
-# Ambiente virtual
+# ==========================================================
+# .gitignore — agressivo: só o stack obrigatorio vai pro repo
+# ==========================================================
+
+# ---- Python ----
 .venv/
 venv/
-
-# Cache do Python
+env/
 __pycache__/
-*.pyc
-
-# Cache de testes
+*.py[cod]
+*$py.class
 .pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
 
-# Saidas geradas em runtime (JSON de execucoes)
+# ---- Outputs do pipeline (regeneraveis) ----
 runs/
+runs_test/
+saida.xlsx
+saida*.xlsx
+site/data/last_failed_run.json
+site/data/*.tmp
+
+# NOTA: site/data/latest.json e site/data/latest.xlsx SAO versionados
+# porque o GitHub Actions (.github/workflows/run-pipeline.yml) commita
+# eles 3x/dia, e o GitHub Pages serve a pasta site/ inteira. Em dev
+# local, ao rodar `--emit-latest site/data`, os arquivos sao sobrescritos;
+# antes de commitar manualmente, restaure com:
+#   git checkout site/data/latest.json site/data/latest.xlsx
+
+# ---- Arquivos lock do Excel (criados quando o .xlsx esta aberto) ----
+~$*.xlsx
+~$*.xls
+
+# ---- Editor / IDE ----
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+*.bak
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Arquivos pessoais / scratch ----
+resume claude.txt
+*.tmp
+*.log

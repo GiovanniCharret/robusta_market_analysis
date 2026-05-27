@@ -1,0 +1,51 @@
+name: ROBUSTA pipeline (3x/dia)
+
+on:
+  schedule:
+    # Seg-Sex em UTC. BRT = UTC-3, entao:
+    #   12:30 UTC = 09:30 BRT (pre-abertura B3)
+    #   16:00 UTC = 13:00 BRT (meio do pregao)
+    #   21:30 UTC = 18:30 BRT (apos fechamento)
+    - cron: '30 12 * * 1-5'
+    - cron: '0 16 * * 1-5'
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:  # permite trigger manual via UI do Actions
+
+permissions:
+  contents: write  # necessario para o bot fazer git push do latest.json/xlsx
+
+concurrency:
+  group: pipeline
+  cancel-in-progress: false  # nao corta uma run no meio se outra disparar
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20  # margem confortavel; run real leva ~5-10min com 79 tickers
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Instala dependencias
+        run: pip install -r requirements.txt
+
+      - name: Roda pipeline (--emit-latest)
+        run: python -m robusta run --emit-latest site/data
+
+      - name: Commita latest.json + latest.xlsx (se mudou)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data/latest.json site/data/latest.xlsx
+          if git diff --staged --quiet; then
+            echo "Sem mudancas no payload; pulando commit."
+          else
+            git commit -m "bot: update latest ($(date -u +'%Y-%m-%dT%H:%MZ'))"
+            git push
+          fi

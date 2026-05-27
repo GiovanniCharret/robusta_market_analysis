@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "run_id": "2026-05-26T13-00-00Z",
+  "generated_at": "2026-05-26T16:00:00+00:00",
+  "robusta_version": "13",
+  "input_universe": [
+    "PRIO3", "ASAI3", "LREN3", "VALE3", "WEGE3", "ITUB4",
+    "GOAU4", "KBLN11", "POMO4"
+  ],
+  "summary": {
+    "tickers_ok": 9,
+    "tickers_failed": 0,
+    "vol_media": 0.34,
+    "vol_std": 0.08
+  },
+  "portfolio_signals": {
+    "shorts": [
+      { "ticker": "PRIO3", "subsetor": "Exploração, Refino e Distribuição", "distortion_ranking": 47, "pct_to_mma10": -1.96 },
+      { "ticker": "ASAI3", "subsetor": "Alimentar",                          "distortion_ranking": 42, "pct_to_mma10":  4.50 },
+      { "ticker": "LREN3", "subsetor": "Vestuário",                          "distortion_ranking": 38, "pct_to_mma10": -2.80 }
+    ],
+    "longs": [
+      { "ticker": "ITUB4", "subsetor": "Bancos",            "distortion_ranking":  -6, "pct_to_mma10":  5.90 },
+      { "ticker": "WEGE3", "subsetor": "Motores",           "distortion_ranking":  -9, "pct_to_mma10":  6.70 },
+      { "ticker": "VALE3", "subsetor": "Minerais Metálicos", "distortion_ranking": -14, "pct_to_mma10":  8.90 }
+    ]
+  },
+  "tickers": {
+    "PRIO3": {
+      "ticker": "PRIO3", "setor": null, "subsetor": "Exploração, Refino e Distribuição",
+      "fundamental_signal": 1, "vol_signal": 0, "posicao_setorial": "melhor",
+      "preco": 19.78, "vol_anualizada_30d": 0.38, "alto_vol_persistente": 0,
+      "mma9": 20.10, "mma10": 20.30, "mma26": 20.80, "mma50": 21.40, "mma150": 22.10, "mma200": 22.50,
+      "pct_to_mma10": -1.96, "pct_to_mma50": -7.50,
+      "sup_min_by_mslf": "Abismo", "sup_med_by_mslf": 18.10, "sup_max_by_mslf": 19.40,
+      "res_min_by_mslf": 20.50, "res_med_by_mslf": 21.80, "res_max_by_mslf": 23.40,
+      "std_raking_value_by_mslf": 2, "momentum_break_by_mslf": 0,
+      "pl": 6.20, "pvp": 1.30, "ev_ebit": 4.80, "roic": 0.21,
+      "cres_rec_5a": 0.18, "div_liq_vm": 0.31,
+      "avaliacao_fundamentalista": 47, "distortion_ranking": 47
+    },
+    "ASAI3": {
+      "ticker": "ASAI3", "setor": null, "subsetor": "Alimentar",
+      "fundamental_signal": 1, "vol_signal": 0, "posicao_setorial": "melhor",
+      "preco": 9.84, "vol_anualizada_30d": 0.31, "alto_vol_persistente": 1,
+      "mma9": 9.40, "mma10": 9.42, "mma26": 9.20, "mma50": 9.10, "mma150": 9.05, "mma200": 9.00,
+      "pct_to_mma10": 4.50, "pct_to_mma50": 8.10,
+      "sup_min_by_mslf": 7.80, "sup_med_by_mslf": 8.60, "sup_max_by_mslf": 9.20,
+      "res_min_by_mslf": 10.10, "res_med_by_mslf": 10.60, "res_max_by_mslf": 11.40,
+      "std_raking_value_by_mslf": 2, "momentum_break_by_mslf": 0,
+      "pl": 12.40, "pvp": 2.10, "ev_ebit": 7.20, "roic": 0.14,
+      "cres_rec_5a": 0.22, "div_liq_vm": 0.18,
+      "avaliacao_fundamentalista": 42, "distortion_ranking": 42
+    },
+    "LREN3": {
+      "ticker": "LREN3", "setor": null, "subsetor": "Vestuário",
+      "fundamental_signal": 0, "vol_signal": 0, "posicao_setorial": "",
+      "preco": 16.42, "vol_anualizada_30d": 0.29, "alto_vol_persistente": 0,
+      "mma9": 16.80, "mma10": 16.89, "mma26": 17.20, "mma50": 17.80, "mma150": 18.20, "mma200": 18.40,
+      "pct_to_mma10": -2.80, "pct_to_mma50": -7.80,
+      "sup_min_by_mslf": 13.50, "sup_med_by_mslf": 14.80, "sup_max_by_mslf": 15.90,
+      "res_min_by_mslf": 17.60, "res_med_by_mslf": 18.30, "res_max_by_mslf": 19.10,
+      "std_raking_value_by_mslf": 1, "momentum_break_by_mslf": 0,
+      "pl": 14.20, "pvp": 2.40, "ev_ebit": 9.10, "roic": 0.12,
+      "cres_rec_5a": 0.08, "div_liq_vm": 0.22,
+      "avaliacao_fundamentalista": 38, "distortion_ranking": 38
+    },
+    "VALE3": {
+      "ticker": "VALE3", "setor": null, "subsetor": "Minerais Metálicos",
+      "fundamental_signal": -1, "vol_signal": 0, "posicao_setorial": "pior",
+      "preco": 62.30, "vol_anualizada_30d": 0.42, "alto_vol_persistente": 0,
+      "mma9": 60.50, "mma10": 60.20, "mma26": 58.40, "mma50": 56.80, "mma150": 55.20, "mma200": 54.00,
+      "pct_to_mma10": 3.50, "pct_to_mma50": 9.70,
+      "sup_min_by_mslf": 48.20, "sup_med_by_mslf": 52.40, "sup_max_by_mslf": 58.90,
+      "res_min_by_mslf": 64.50, "res_med_by_mslf": 67.80, "res_max_by_mslf": 71.20,
+      "std_raking_value_by_mslf": 3, "momentum_break_by_mslf": 0,
+      "pl": 18.40, "pvp": 1.85, "ev_ebit": 11.20, "roic": 0.09,
+      "cres_rec_5a": -0.04, "div_liq_vm": 0.42,
+      "avaliacao_fundamentalista": 14, "distortion_ranking": -14
+    },
+    "WEGE3": {
+      "ticker": "WEGE3", "setor": null, "subsetor": "Motores",
+      "fundamental_signal": 0, "vol_signal": 0, "posicao_setorial": "",
+      "preco": 38.15, "vol_anualizada_30d": 0.27, "alto_vol_persistente": 0,
+      "mma9": 37.20, "mma10": 37.10, "mma26": 36.40, "mma50": 35.80, "mma150": 35.20, "mma200": 34.80,
+      "pct_to_mma10": 2.80, "pct_to_mma50": 6.50,
+      "sup_min_by_mslf": 31.40, "sup_med_by_mslf": 33.20, "sup_max_by_mslf": 36.10,
+      "res_min_by_mslf": 39.50, "res_med_by_mslf": 41.80, "res_max_by_mslf": 44.20,
+      "std_raking_value_by_mslf": 2, "momentum_break_by_mslf": 0,
+      "pl": 28.60, "pvp": 6.40, "ev_ebit": 17.20, "roic": 0.22,
+      "cres_rec_5a": 0.14, "div_liq_vm": 0.05,
+      "avaliacao_fundamentalista": 30, "distortion_ranking": -9
+    },
+    "ITUB4": {
+      "ticker": "ITUB4", "setor": null, "subsetor": "Bancos",
+      "fundamental_signal": 0, "vol_signal": 0, "posicao_setorial": "",
+      "preco": 32.80, "vol_anualizada_30d": 0.24, "alto_vol_persistente": 0,
+      "mma9": 32.10, "mma10": 32.00, "mma26": 31.20, "mma50": 30.50, "mma150": 29.80, "mma200": 29.20,
+      "pct_to_mma10": 2.50, "pct_to_mma50": 7.50,
+      "sup_min_by_mslf": 26.80, "sup_med_by_mslf": 28.40, "sup_max_by_mslf": 30.90,
+      "res_min_by_mslf": 33.80, "res_med_by_mslf": 35.20, "res_max_by_mslf": 36.90,
+      "std_raking_value_by_mslf": 2, "momentum_break_by_mslf": 0,
+      "pl": 9.20, "pvp": 1.95, "ev_ebit": null, "roic": null,
+      "cres_rec_5a": 0.10, "div_liq_vm": null,
+      "avaliacao_fundamentalista": 28, "distortion_ranking": -6
+    },
+    "GOAU4": {
+      "ticker": "GOAU4", "setor": null, "subsetor": "Siderurgia",
+      "fundamental_signal": 0, "vol_signal": 0, "posicao_setorial": "pior",
+      "preco": 11.07, "vol_anualizada_30d": 0.38, "alto_vol_persistente": 0,
+      "mma9": 11.20, "mma10": 11.30, "mma26": 11.80, "mma50": 12.20, "mma150": 12.60, "mma200": 12.80,
+      "pct_to_mma10": -2.00, "pct_to_mma50": -9.30,
+      "sup_min_by_mslf": 8.40, "sup_med_by_mslf": 9.60, "sup_max_by_mslf": 10.50,
+      "res_min_by_mslf": 11.80, "res_med_by_mslf": 12.40, "res_max_by_mslf": 13.10,
+      "std_raking_value_by_mslf": 1, "momentum_break_by_mslf": 0,
+      "pl": 8.20, "pvp": 0.85, "ev_ebit": 6.40, "roic": 0.08,
+      "cres_rec_5a": -0.02, "div_liq_vm": 0.18,
+      "avaliacao_fundamentalista": 22, "distortion_ranking": 12
+    },
+    "KBLN11": {
+      "ticker": "KBLN11", "setor": null, "subsetor": "Fundos Imobiliários",
+      "fundamental_signal": 1, "vol_signal": 1, "posicao_setorial": "",
+      "preco": 8.21, "vol_anualizada_30d": 0.18, "alto_vol_persistente": 0,
+      "mma9": 8.10, "mma10": 8.08, "mma26": 8.00, "mma50": 7.90, "mma150": 7.80, "mma200": 7.70,
+      "pct_to_mma10": 1.60, "pct_to_mma50": 3.90,
+      "sup_min_by_mslf": 7.20, "sup_med_by_mslf": 7.50, "sup_max_by_mslf": 7.90,
+      "res_min_by_mslf": 8.40, "res_med_by_mslf": "Foguete", "res_max_by_mslf": "Foguete",
+      "std_raking_value_by_mslf": 1, "momentum_break_by_mslf": 1,
+      "pl": 7.40, "pvp": 1.02, "ev_ebit": null, "roic": 0.09,
+      "cres_rec_5a": 0.06, "div_liq_vm": null,
+      "avaliacao_fundamentalista": 32, "distortion_ranking": 8
+    },
+    "POMO4": {
+      "ticker": "POMO4", "setor": null, "subsetor": "Material Rodoviário",
+      "fundamental_signal": -1, "vol_signal": -1, "posicao_setorial": "pior",
+      "preco": 4.12, "vol_anualizada_30d": 0.51, "alto_vol_persistente": 1,
+      "mma9": 4.30, "mma10": 4.35, "mma26": 4.60, "mma50": 4.90, "mma150": 5.20, "mma200": 5.30,
+      "pct_to_mma10": -5.30, "pct_to_mma50": -15.90,
+      "sup_min_by_mslf": "Abismo", "sup_med_by_mslf": "Abismo", "sup_max_by_mslf": 3.80,
+      "res_min_by_mslf": 4.40, "res_med_by_mslf": 4.80, "res_max_by_mslf": 5.20,
+      "std_raking_value_by_mslf": 1, "momentum_break_by_mslf": -1,
+      "pl": -1000000, "pvp": 1.80, "ev_ebit": 22.40, "roic": -0.02,
+      "cres_rec_5a": -0.12, "div_liq_vm": 0.62,
+      "avaliacao_fundamentalista": 18, "distortion_ranking": -18
+    }
+  },
+  "warnings": [
+    "ITUB4: sem dados fundamentalistas completos (EV/EBIT, ROIC, Dív. Líq./VM)",
+    "KBLN11: sem dados fundamentalistas completos (EV/EBIT, Dív. Líq./VM)"
+  ],
+  "failed_tickers": []
+}
