@@ -1,0 +1,95 @@
+Sequência da Fase 8 (GitHub Actions + Pages)
+=============================================
+
+PRÉ-REQUISITO: branch final_deploy já criada e contendo:
+  - .github/workflows/run-pipeline.yml  (cron 3x/dia que roda o pipeline)
+  - .github/workflows/deploy-pages.yml  (deploy do site/ para Pages)
+  - .gitignore atualizado
+  - README.md
+  - site/ com index.html, ticker.html, assets/, data/
+
+----------------------------------------------------------------
+1. Push da branch e merge na main
+----------------------------------------------------------------
+  git push -u origin final_deploy
+
+  No GitHub:
+    - Abrir PR de final_deploy -> main
+    - Revisar diff
+    - Merge (squash ou merge commit, à sua escolha)
+
+----------------------------------------------------------------
+2. Habilitar Pages (Source = GitHub Actions, NÃO "Deploy from a branch")
+----------------------------------------------------------------
+  Settings -> Pages
+  -> Source: "GitHub Actions"        <-- ESCOLHA ESTA OPÇÃO
+  -> NÃO selecionar "Deploy from a branch"
+     (essa opção só permite /(root) ou /docs como pasta;
+      "GitHub Actions" não tem essa restrição)
+  -> Salvar
+
+  Nota: a página vai mostrar "Your GitHub Pages site is currently being built..."
+  ou "Your site is live at https://giovannicharret.github.io/robusta_market_analysis/"
+  depois que o primeiro deploy rodar.
+
+----------------------------------------------------------------
+3. Disparar o pipeline manualmente (primeira run)
+----------------------------------------------------------------
+  Actions -> "ROBUSTA pipeline (3x/dia)" -> "Run workflow"
+  -> Branch: main
+  -> Botão verde "Run workflow"
+
+  Esse run vai:
+    a) baixar dados do Yahoo e Fundamentus (~5-10 min)
+    b) gerar site/data/latest.json + latest.xlsx
+    c) commitar via github-actions[bot] na main
+    d) push (que dispara o workflow "Deploy site/ to GitHub Pages")
+
+  Acompanhar em Actions -> tab "All workflows".
+
+----------------------------------------------------------------
+4. Verificar deploy do Pages
+----------------------------------------------------------------
+  Após o run-pipeline terminar e fazer push, o deploy-pages dispara
+  automaticamente. Ele leva ~1 min.
+
+  Conferir em Actions -> "Deploy site/ to GitHub Pages" -> última run.
+
+  Depois de completar, o site fica disponível em:
+    https://giovannicharret.github.io/robusta_market_analysis/
+
+----------------------------------------------------------------
+5. Reportar resultado pro Claude
+----------------------------------------------------------------
+  Quando os dois workflows terminarem, me passa:
+    a) Link da run do run-pipeline (em Actions)
+    b) Confirmação de que conseguiu abrir a URL do Pages
+
+  Eu monitoro via WebFetch e reporto:
+    - tickers_ok=N / tickers_failed=M
+    - Se houve YFRateLimitError no log
+    - Se o latest.json no Pages tem dados frescos
+    - Se o dashboard renderiza corretamente
+
+----------------------------------------------------------------
+Próximos passos automáticos (sem ação manual)
+----------------------------------------------------------------
+  Cron seg-sex 12:30, 16:00, 21:30 UTC dispara run-pipeline,
+  que faz commit, que dispara deploy-pages.
+
+  Para mudanças manuais no site/ (ex: CSS, HTML, JS):
+    - Edite localmente
+    - git push em main
+    - O deploy-pages roda sozinho (~1 min)
+
+----------------------------------------------------------------
+Domínio próprio (opcional, depois que tudo estiver funcionando)
+----------------------------------------------------------------
+  1. Criar arquivo site/CNAME com uma linha: seudominio.com.br
+  2. No painel DNS do registrador:
+       Tipo: CNAME
+       Nome: @ (ou subdominio)
+       Valor: giovannicharret.github.io
+  3. Settings -> Pages -> Custom domain: seudominio.com.br
+  4. Aguardar propagação DNS (~minutos a horas)
+  5. Marcar "Enforce HTTPS"
