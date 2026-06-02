@@ -3,12 +3,14 @@ name: ROBUSTA pipeline (3x/dia)
 on:
   schedule:
     # Seg-Sex em UTC. BRT = UTC-3, entao:
-    #   12:30 UTC = 09:30 BRT (pre-abertura B3)
-    #   16:00 UTC = 13:00 BRT (meio do pregao)
-    #   21:30 UTC = 18:30 BRT (apos fechamento)
-    - cron: '30 12 * * 1-5'
-    - cron: '0 16 * * 1-5'
-    - cron: '30 21 * * 1-5'
+    #   12:37 UTC = 09:37 BRT (pre-abertura B3)
+    #   16:13 UTC = 13:13 BRT (meio do pregao)
+    #   21:43 UTC = 18:43 BRT (apos fechamento)
+    # Minutos primos (7/13/13/43) evitam a fila concorrida do GitHub Actions
+    # que se forma em horarios redondos (:00, :15, :30, :45).
+    - cron: '37 12 * * 1-5'
+    - cron: '13 16 * * 1-5'
+    - cron: '43 21 * * 1-5'
   workflow_dispatch:  # permite trigger manual via UI do Actions
 
 permissions:

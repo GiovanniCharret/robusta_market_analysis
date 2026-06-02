@@ -17,12 +17,24 @@ from robusta import config
 
 logger = logging.getLogger(__name__)
 
-# Header de navegador; o Fundamentus recusa requisicoes sem User-Agent.
+# Headers de navegador realista. O User-Agent antigo (Chrome 58, 2017) era
+# facilmente sinalizavel por anti-bot, especialmente combinado com IPs de
+# datacenter (GitHub Actions). Atualizado pra Chrome recente + Accept/
+# Accept-Language equivalentes ao que um navegador real envia.
+# Motivo: cron 2026-06-01 falhou com 3 runs sequenciais (scrape retornou
+# 0 linhas) - ver planning/falha_cron.md.
 _HEADERS_FUNDAMENTUS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-        "(KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36"
-    )
+        "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;q=0.9,"
+        "image/avif,image/webp,*/*;q=0.8"
+    ),
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Connection": "keep-alive",
 }
 
 
