@@ -123,7 +123,7 @@ class RunResult:
 
 
 def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1,
-                     forcar_raspagem_fundamentos=False):
+                     forcar_raspagem_fundamentos=False, debug_fundamentos=False):
     """Roda a analise completa para `universo` e devolve um `RunResult`.
 
     Etapas: tecnica (`screener`) -> fundamentos (regra mensal de cache) ->
@@ -136,7 +136,15 @@ def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1,
 
     `forcar_raspagem_fundamentos=True` ignora a regra mensal e forca uma nova
     raspagem do Fundamentus (flag de CLI `--refresh-fundamentos`).
+
+    `debug_fundamentos=True` (flag de CLI `--debug-fundamentos`) implica
+    `forcar_raspagem_fundamentos=True` e propaga `debug=True` para
+    `fundamental.varre_lista`, imprimindo por ticker URL/tabelas/colunas e
+    tracebacks completos em caso de falha. Use para diagnosticar quebras
+    de scrape; nao deixar ligado em producao.
     """
+    if debug_fundamentos:
+        forcar_raspagem_fundamentos = True
     if momento is None:
         momento = pd.Timestamp.now(tz="UTC")
     momento = pd.Timestamp(momento)
@@ -156,7 +164,7 @@ def executa_pipeline(universo, momento=None, mma50_wgh=4, mma10_wgh=1,
     # 2. Fundamentos: raspa so no 1o dia util do mes, senao le o cache.
     fundamentos = data.carrega_fundamentos(
         momento,
-        raspar_fn=lambda: fundamental.varre_lista(universo),
+        raspar_fn=lambda: fundamental.varre_lista(universo, debug=debug_fundamentos),
         forcar_raspagem=forcar_raspagem_fundamentos,
     )
 

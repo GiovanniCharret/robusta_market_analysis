@@ -40,7 +40,9 @@ def _comando_run(args):
     # um subconjunto opcional para dev/debug.
     universo = args.tickers or data.ler_lista_tickers()
     resultado = pipeline.executa_pipeline(
-        universo, forcar_raspagem_fundamentos=args.refresh_fundamentos
+        universo,
+        forcar_raspagem_fundamentos=args.refresh_fundamentos,
+        debug_fundamentos=args.debug_fundamentos,
     )
 
     print(
@@ -81,6 +83,11 @@ def construir_parser():
     p_run.add_argument(
         "--refresh-fundamentos", action="store_true",
         help="Forca raspagem do Fundamentus mesmo fora do 1o dia util do mes.",
+    )
+    p_run.add_argument(
+        "--debug-fundamentos", action="store_true",
+        help="DEBUG: imprime URL/tabelas/colunas por ticker e traceback completo "
+             "em caso de falha do scrape. Implica --refresh-fundamentos.",
     )
     p_run.add_argument(
         "--emit-latest", nargs="?", const="", default=None, metavar="PASTA",

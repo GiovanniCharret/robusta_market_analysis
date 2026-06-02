@@ -352,7 +352,20 @@ def adicione_indicadores_e_ranking(all_ticker_financial_indicators, precos_por_t
         `Dív. Líquida/Valor de mercado` com `bloquear_negativos=False`;
         `P/L`, `P/VP`, `EV / EBIT` com `bloquear_negativos=True`.
       - Conjuntos de indicadores e a remocao de colunas `Unnamed` preservados.
+      - Guarda explicita contra DataFrame vazio: se o scrape do Fundamentus
+        retornou nada (anti-bot bloqueando IP, site fora do ar), levanta
+        RuntimeError com mensagem clara em vez de explodir com KeyError
+        cripta no primeiro `rankeia_*` (caso do cron 2026-06-01).
     """
+    if all_ticker_financial_indicators.empty:
+        raise RuntimeError(
+            "DataFrame de fundamentos vazio - scrape do Fundamentus nao "
+            "produziu nenhuma linha. Causas provaveis: bloqueio de IP do "
+            "host (provavel se rodando em datacenter/cloud), site fora do "
+            "ar, ou cache vazio. Rodar `python -m robusta run --debug-fundamentos` "
+            "para diagnostico detalhado."
+        )
+
     df = gera_indicadores_extras(all_ticker_financial_indicators, precos_por_ticker)
 
     df = rankeia_outros_indicadores_maior_melhor(df, "Cres. Rec (5a)", "ROIC")
@@ -372,7 +385,7 @@ def adicione_indicadores_e_ranking(all_ticker_financial_indicators, precos_por_t
     return df
 
 
-def varre_lista(lista, probleminhas=None):
+def varre_lista(lista, probleminhas=None, debug=False):
     """Raspa o Fundamentus para cada ticker da lista e consolida num DataFrame.
 
     Para cada ticker base: monta a URL (`config.FUNDAMENTUS_URL_BASE + ticker`),
@@ -380,16 +393,12 @@ def varre_lista(lista, probleminhas=None):
     a linha resultante. Tickers em `probleminhas` sao pulados; falhas de
     download/parse sao logadas e ignoradas sem interromper a varredura.
 
-    Mudancas de porte vs legado (`main.py:1264-1324`):
-      - `probleminhas` vira parametro (era global); `probleminhas_temp` removido.
-      - `url_financials` global -> `config.FUNDAMENTUS_URL_BASE`.
-      - Acumulacao em lista + um unico `pd.concat` no final, no lugar do
-        preenchimento manual via `.loc[ticker_contador, ...]` (que descartava
-        colunas ausentes no primeiro ticker e tinha um `except` quebrado
-        referenciando `tables` indefinido). O `concat` unifica as colunas.
-      - `except:` nus viram `except Exception` com logging.
-      - `tqdm` mantido (reintroduzido a pedido do usuario) para feedback
-        visual no laco mais lento (HTTP por ticker no Fundamentus).
+    `debug=True` imprime via `tqdm.write` (nao quebra a barra) por ticker:
+    URL, numero de tabelas extraidas pelo `read_html`, e quantas colunas
+    sobraram apos `formatar_tabela`. Em falha, imprime o traceback completo
+    em vez de so o `logger.warning`. Use para diagnosticar quebras do scrape
+    (HTML mudou, anti-bot novo, ticker delistado). Nao deixar ligado em
+    producao — barulhento e nao agrega valor em runs saudaveis.
     """
     if probleminhas is None:
         probleminhas = set()
@@ -400,11 +409,23 @@ def varre_lista(lista, probleminhas=None):
             logger.info("%s em probleminhas - pulado", ticker)
             continue
 
+        url = config.FUNDAMENTUS_URL_BASE + ticker
         try:
-            tables = puxar_dados(config.FUNDAMENTUS_URL_BASE + ticker)
+            tables = puxar_dados(url)
+            if debug:
+                tqdm.write(f"[debug] {ticker}: {url} -> {len(tables)} tabela(s) parseada(s)")
             indicadores = formatar_tabela(tables)
-        except Exception:
-            logger.warning("Erro ao raspar/parsear %s", ticker, exc_info=True)
+            if debug:
+                tqdm.write(
+                    f"[debug] {ticker}: formatar_tabela -> {len(indicadores.columns)} colunas, "
+                    f"Ticker={'sim' if 'Ticker' in indicadores.columns else 'NAO'}"
+                )
+        except Exception as exc:
+            if debug:
+                import traceback
+                tqdm.write(f"[debug] {ticker}: FALHOU em {url}\n{traceback.format_exc()}")
+            else:
+                logger.warning("Erro ao raspar/parsear %s: %s", ticker, exc, exc_info=True)
             continue
 
         # Pagina do Fundamentus sem 'Papel' (ticker inexistente, redirect ou
