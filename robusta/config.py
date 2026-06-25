@@ -20,7 +20,7 @@ MMA_WINDOWS = (9, 10, 26, 50, 150, 200)
 # Janela da volatilidade anualizada, em dias.
 VOL_WINDOW = 30
 # Anos de historico de cotacoes baixados da Yahoo Finance.
-HISTORICO_ANOS = 5
+HISTORICO_ANOS = 2
 
 # --- Caminhos ---------------------------------------------------------------
 RAIZ = Path(__file__).resolve().parent.parent
