@@ -63,6 +63,82 @@ a:hover { text-decoration: underline; }
 }
 .download-btn .arrow { margin-right: 4px; }
 
+/* selo do previsor — coluna à esquerda, centrada na altura da página.
+   O slot é uma faixa vertical em grid: `align-content: center` resolve a
+   altura, `justify-items: start` mantém tudo colado à esquerda. O slot
+   encolhe pra largura do conteúdo, então não cobre o miolo centralizado. */
+.previsor-slot {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  /* Recuo proporcional: cresce com a tela pra o bloco não ficar órfão na
+     borda enquanto o miolo está centralizado.
+       14vw            → o recuo em si; aumente pra empurrar mais pro centro.
+       50% - 460px     → teto que impede invadir a coluna central. O 460 é
+                         270 (metade dos 540px das listas) + ~155 (largura do
+                         bloco) + 35 (respiro). Abaixo de 992px esse teto fica
+                         menor que a sarjeta e o @media assume.
+       36px            → piso, igual ao padding lateral do .app. */
+  left: max(36px, min(14vw, calc(50% - 460px)));
+  display: grid;
+  align-content: center;
+  justify-items: start;
+}
+/* O link em si também é grid: título em cima, selo embaixo, ambos à esquerda. */
+.previsor {
+  display: grid;
+  justify-items: start;
+  gap: 6px;
+}
+.previsor:hover { text-decoration: none; }
+
+/* Abaixo de 992px não sobra sarjeta pra coluna esquerda sem invadir as listas
+   centralizadas (é onde `50% - 460px` cai abaixo do piso de 36px); aí ela
+   volta pro fluxo normal, no topo (é o primeiro filho do .app). */
+@media (max-width: 992px) {
+  .previsor-slot {
+    position: static;
+    justify-content: start;
+    margin-bottom: 40px;
+  }
+}
+.previsor .titulo {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--gray-500);
+  transition: color 0.12s;
+}
+.previsor:hover .titulo { color: var(--clay); text-decoration: underline; }
+
+/* .veredito: mesma forma do selo de charretia_previsor_movimentos_b3 (mono,
+   maiúsculo, 11.5px), mas repintado na paleta do ROBUSTA. O estado neutro usa
+   os mesmos tokens do .download-btn, pra os dois cantos conversarem; o raio de
+   6px também vem de lá (o original é 2px). */
+.veredito {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 7px 13px;
+  border-radius: 6px;
+  white-space: nowrap;
+  color: var(--gray-500);
+  background: var(--gray-150);
+  border: 1px solid var(--gray-300);
+}
+/* Estado "índice na zona de viés" — o único em que aquela tela tem algo a
+   dizer. Usa --clay, que aqui é a cor de atenção (link, .active, .v.accent),
+   papel equivalente ao --acento do site de origem. Não usei --olive porque
+   nesta paleta ele significa "alta", direção que o selo não afirma. */
+.veredito.v-zona {
+  color: var(--clay);
+  background: rgba(217, 119, 87, 0.10);
+  border-color: rgba(217, 119, 87, 0.45);
+}
+
 /* brand central */
 .brand-center { text-align: center; margin-bottom: 14px; }
 .brand-center .name {

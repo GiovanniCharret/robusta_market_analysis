@@ -9,6 +9,15 @@
 <body>
 
   <main class="app">
+    <div class="previsor-slot">
+      <a class="previsor"
+         href="https://giovannicharret.github.io/charretia_previsor_movimentos_b3/"
+         title="CharretIA — previsor de movimentos da B3">
+        <span class="titulo">charretIA · previsor</span>
+        <span class="veredito" id="previsor-veredito" hidden></span>
+      </a>
+    </div>
+
     <a href="./data/latest.xlsx" download="robusta-latest.xlsx" class="download-btn">
       <span class="arrow">↓</span>excel
     </a>
@@ -46,6 +55,22 @@
 
   <script src="assets/app.js"></script>
   <script>
+    // Selo do previsor — independente do latest.json de propósito: uma falha
+    // aqui não pode derrubar o dashboard, nem o contrário.
+    (async function () {
+      const selo = document.getElementById("previsor-veredito");
+      try {
+        const { texto, zona } = await window.ROBUSTA.carregaVeredito();
+        selo.textContent = texto;
+        selo.classList.toggle("v-zona", zona);
+        selo.hidden = false;
+      } catch (err) {
+        // Sem rede, ou o markup de lá mudou: o link continua funcionando e o
+        // selo simplesmente não aparece. Melhor nada do que um estado errado.
+        console.warn("veredito do previsor indisponível:", err);
+      }
+    })();
+
     (async function () {
       const $ = (id) => document.getElementById(id);
 

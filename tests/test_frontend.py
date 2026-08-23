@@ -137,6 +137,52 @@ def test_ticker_html_tem_bloco_carteira():
         assert header in html, f"falta header '{header}' na tabela da carteira"
 
 
+def test_index_html_tem_link_do_previsor_com_veredito():
+    """Coluna esquerda: link pro previsor com título + selo .veredito."""
+    html = (SITE / "index.html").read_text(encoding="utf-8")
+    assert "giovannicharret.github.io/charretia_previsor_movimentos_b3" in html
+    assert 'class="previsor-slot"' in html
+    assert 'class="previsor"' in html
+    # Título acima do selo, e o selo que o JS preenche.
+    assert 'class="titulo"' in html
+    assert 'id="previsor-veredito"' in html
+    # Nasce escondido: só aparece se o fetch do veredito der certo.
+    assert 'class="veredito" id="previsor-veredito" hidden' in html
+
+
+def test_app_js_exporta_carrega_veredito():
+    """Helper que espelha o selo do previsor existe e está exportado."""
+    js = (SITE / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "async function carregaVeredito" in js
+    assert js.count("carregaVeredito") >= 2  # definição + export
+    assert "charretia_previsor_movimentos_b3" in js
+
+
+def test_app_css_tem_estilos_do_veredito():
+    """Selo repintado na paleta do ROBUSTA (tokens, não cores do site de origem)."""
+    css = (SITE / "assets" / "app.css").read_text(encoding="utf-8")
+    assert ".veredito {" in css
+    assert ".veredito.v-zona {" in css
+    # Estado neutro usa os mesmos tokens do .download-btn do canto oposto.
+    assert "color: var(--gray-500)" in css
+    assert "background: var(--gray-150)" in css
+    # Nenhuma cor do previsor sobrou hardcoded.
+    for cor_estrangeira in ["#6E7B78", "#EBEFEE", "#1F7A6B", "#E4F0ED"]:
+        assert cor_estrangeira not in css, f"{cor_estrangeira} é do previsor, não do ROBUSTA"
+
+
+def test_app_css_posiciona_previsor_em_grid_centrado():
+    """Slot da esquerda: grid, centrado na altura, itens à esquerda."""
+    css = (SITE / "assets" / "app.css").read_text(encoding="utf-8")
+    slot = css.split(".previsor-slot {", 1)[1].split("}", 1)[0]
+    assert "display: grid" in slot
+    assert "align-content: center" in slot   # centro na altura
+    assert "justify-items: start" in slot    # alinhado à esquerda
+    # Recuo proporcional à tela, com piso e teto (não pode ser px fixo).
+    assert "vw" in slot, "o recuo esquerdo deve escalar com a viewport"
+    assert "max(" in slot and "min(" in slot
+
+
 def test_app_js_exporta_monta_mini_regua_sr():
     """7d: helper de mini-régua existe e está exportado em window.ROBUSTA."""
     js = (SITE / "assets" / "app.js").read_text(encoding="utf-8")

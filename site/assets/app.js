@@ -15,6 +15,11 @@
 const DATA_URL = "./data/latest.json";
 const CARTEIRA_URL = "./data/carteira.json";
 
+// Projeto irmão (outro repo/Pages): o previsor de movimentos da B3. A home do
+// ROBUSTA mostra o selo `.veredito` dele no canto superior esquerdo.
+const PREVISOR_URL =
+  "https://giovannicharret.github.io/charretia_previsor_movimentos_b3/";
+
 /* ------------------------------------------------------------------ */
 /*  fetch + parse                                                     */
 /* ------------------------------------------------------------------ */
@@ -48,6 +53,35 @@ async function carregaDados() {
     warnings: latest.warnings || [],
     failedTickers: latest.failed_tickers || [],
     carteira: carteira.tickers || [],
+  };
+}
+
+/**
+ * Lê o selo `.veredito` da home do previsor e devolve `{texto, zona}`.
+ *
+ * O selo é gerado estaticamente lá; espelhamos em vez de copiar o texto pra
+ * cá pra não congelar um estado que muda ("sem sinal" -> viés na zona). O
+ * GitHub Pages do previsor responde com `access-control-allow-origin: *`,
+ * então o fetch cross-origin funciona sem proxy.
+ *
+ * Levanta em rede fora, HTTP != 2xx ou markup mudado — quem chama decide o
+ * fallback (a home esconde o selo e mantém o link).
+ */
+async function carregaVeredito() {
+  const res = await fetch(PREVISOR_URL, { cache: "no-cache" });
+  if (!res.ok) {
+    throw new Error(`falha ao carregar ${PREVISOR_URL}: HTTP ${res.status}`);
+  }
+  const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+  const el = doc.querySelector(".veredito");
+  if (!el) {
+    throw new Error("elemento .veredito não encontrado na página do previsor");
+  }
+  return {
+    texto: el.textContent.trim(),
+    // `v-zona` é o estado "o índice está na zona de viés" — o único momento em
+    // que aquela tela tem algo a dizer. Sem ele, o selo fica no tom neutro.
+    zona: el.classList.contains("v-zona"),
   };
 }
 
@@ -254,6 +288,8 @@ function montaMiniReguaSR(ticker) {
 
 window.ROBUSTA = {
   carregaDados,
+  carregaVeredito,
+  PREVISOR_URL,
   getTickerParam,
   urlDoTicker,
   formataData,

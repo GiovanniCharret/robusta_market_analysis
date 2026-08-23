@@ -4,32 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-**ROBUSTA** is a Brazilian stock market screener and decision system. It combines technical and fundamental analysis of B3-listed stocks to generate trading signals. Version is the single source `robusta/config.py:VERSION`.
+**ROBUSTA** is a personal Brazilian stock market screener. It combines technical and fundamental analysis of B3-listed stocks into a single cross-sectional `distortion_ranking` that produces long/short signals. Version is the single source `robusta/config.py:VERSION` (currently `"13"`).
 
-The repo is currently in a **modular rebuild** of an older monolithic script. The runnable code lives in the `robusta/` package; the legacy `main.py` has already been removed from the repo root, and a frozen snapshot is kept at `scripts_antigos/main.py` purely as historical reference (do **not** edit it, and don't treat its symbols as live).
+The whole system is: a Python package (`robusta/`) that emits one `latest.json`, a static frontend (`site/`) that fetches it, and two GitHub Actions workflows that run the pipeline 3×/day and republish the site. **There is no server, no API, no database, and no run history** — each run overwrites `latest.json`; the history lives only in the bot's commits on `main`.
 
-The rebuild is tracked phase by phase in `planning/PLAN.md`. **Phases 1–6 are complete** — `config`, `data`, full technical analysis (T1–T7), full fundamental analysis (F1–F10), the consolidated pipeline + `RunResult`, and the JSON/XLSX persistence layer. **Phase 7 (static frontend) is in progress.** Phase 8 (cron + VPS deployment) follows. When changing analytical behavior, work in `robusta/`.
+Live site: https://giovannicharret.github.io/robusta_market_analysis/
 
-Adjacent files worth knowing about:
-- `scripts_antigos/main.py` — historical snapshot of the old monolith. Read-only reference. Do not edit, do not include in greps for live symbols.
-- `planning/` — all project documentation: `PLAN.md` (modular rebuild plan with per-phase checkboxes), `PROJECT_BUILDING.md` (meta-plan/setup checklist), `ADVERSARIAL_REVIEW.md` (adversarial gap analysis of the plan), `architecture-static-first.html` + `dashboard-v1-mockup.html` (approved frontend mockups), `implementation-plan.html` (rendered plan), and `html-effectiveness/` (HTML design references).
-- `site/` — static frontend (HTML + CSS + vanilla JS) being built in Phase 7; served by nginx in production.
-- `tests/` — pytest suite covering the rebuild only. `tests/baseline/COLUMN_SCHEMA.md` is the static column-by-column baseline of the legacy flow that the rebuild must reproduce; `tests/fixtures/` holds deterministic synthetic OHLCV CSVs (PRIO3/ASAI3/LREN3, 260 sessions each), a minimal Fundamentus HTML, and `latest_mock.json` for frontend iteration — so tests never touch the network.
-- `docs/` — reserved for technical documentation; currently empty.
+The modular rebuild described in `planning/PLAN.md` is **complete** (phases 1–7 all `[x]`, deployment shipped). The legacy monolith `main.py` and the `scripts_antigos/` snapshot have both been **deleted from the repo** — if you see references to them in `README.md`, `AGENTS.md`, or `planning/`, those documents are stale; `robusta/` is the only live code.
 
-All planning documents live under `planning/`. `BEHAVIORAL_GUIDELINES.md` is a critical document for how to make changes (surgical, simple, surface uncertainty).
+## Commands
 
-### Document hierarchy
-
-Four instruction documents coexist; when guidance overlaps, they apply at different scopes:
-- `CLAUDE.md` — repo facts, architecture, current state (this file).
-- `BEHAVIORAL_GUIDELINES.md` — process: how to make changes (surgical, simple, surface uncertainty).
-- `planning/PLAN.md` — scope: the approved modular-rebuild work and its phase checkboxes; **always read it before starting a rebuild phase**.
-- `AGENTS.md` — repo-guidelines variant (structure, build commands, style, commit/PR conventions); overlaps with this file but adds commit/PR and testing conventions.
-
-## Running the project
-
-Environment setup (PowerShell — this is a Windows dev box; the production target is a Linux VPS):
+Dev box is Windows/PowerShell; CI is `ubuntu-latest` on Python 3.13.
 
 ```powershell
 python -m venv .venv
@@ -37,128 +22,158 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-`requirements.txt` pins the rebuild's dependency surface (yfinance, requests, beautifulsoup4, lxml, numpy, pandas, openpyxl, tqdm, fastapi, uvicorn, pytest). FastAPI/uvicorn are vestigial — the architecture pivoted to static files served by nginx; they're not used today and may be pruned later. `.venv/`, `venv/`, `__pycache__/`, `.pytest_cache/`, `runs/` and `runs_test/` are gitignored.
-
-Run the pipeline via the CLI:
+### Pipeline
 
 ```bash
-python -m robusta run                              # roda a lista inteira do Excel
-python -m robusta run --tickers PRIO3 ASAI3        # subconjunto dev/debug
-python -m robusta run --export-xlsx saida.xlsx     # export ad-hoc do merged
-python -m robusta run --refresh-fundamentos        # força raspagem do Fundamentus
-python -m robusta run --emit-latest                # grava latest.json + latest.xlsx em ~/robusta/var/
-python -m robusta run --emit-latest PASTA          # grava em PASTA
+python -m robusta run                                   # universo completo, sem gravar nada
+python -m robusta run --emit-latest site/data           # o que o CI roda: grava latest.json + latest.xlsx
+python -m robusta run --tickers PRIO3 ASAI3 --emit-latest site/data   # subset dev/debug
+python -m robusta run --export-xlsx saida.xlsx          # export ad-hoc do merged
+python -m robusta run --refresh-fundamentos             # ignora o gate mensal do Fundamentus
+python -m robusta run --debug-fundamentos               # traceback/URL/colunas por ticker (implica --refresh)
 ```
 
-`run` executes `pipeline.executa_pipeline` end-to-end. The default universe is the full `lista_tickers_liquidos.xlsx`; `--tickers` is a dev/debug override (the legacy had this hardcoded as a bug — see "Known issues"). Fundamentus is scraped only on the 1st business day of the month unless `--refresh-fundamentos` is passed. This makes **real** network calls (Yahoo Finance + Fundamentus) and can hit rate limits.
+`--emit-latest` sem argumento grava em `~/robusta/var/`; com argumento usa o caminho. Todo `run` faz chamadas de rede reais (Yahoo Finance + Fundamentus) e pode sofrer rate-limit; o universo completo (~79 tickers) leva 5–10 min.
 
-`--emit-latest` is what the production cron will invoke: it writes `latest.json` + `latest.xlsx` atomically via `robusta.persistence.grava_latest`.
-
-Run the test suite:
+### Testes
 
 ```bash
-pytest                                              # all tests
-pytest tests/test_data.py::test_eh_primeiro_dia_util_do_mes   # one test
+pytest                                                  # 122 testes, nenhum toca a rede
+pytest tests/test_persistence.py                        # um módulo
+pytest tests/test_data.py::test_eh_primeiro_dia_util_do_mes   # um teste
 ```
 
-Tests cover `robusta/` only — there are no tests against `scripts_antigos/main.py`.
+`pytest` da raiz é a **única** evidência de verificação aceita — REPL e scripts descartáveis não contam. `tests/test_frontend.py` chama `node --check site/assets/app.js`, então precisa de Node no PATH.
+
+### Site local
+
+```bash
+python -m http.server 8000 --directory site   # abrir http://localhost:8000/
+```
 
 ## Architecture
 
-### Package layout
+### Fluxo de dados (uma passada, sem estado global)
 
-`robusta/` contains:
+```
+lista_tickers_liquidos.xlsx
+        │
+        ▼
+technical.screener ──► (carteira_automatica, precos_por_ticker: Dict[str, float])
+        │                                    │
+        │                                    ▼ (handoff explícito, ticker base sem .SA)
+        │              data.carrega_fundamentos ──► fundamental.varre_lista (scrape)
+        │                        │                  ou all_ticker_financial_indicators.xlsx (cache)
+        │                        ▼
+        │              fundamental.adicione_indicadores_e_ranking (F3→F8)
+        │                        │
+        ▼                        ▼
+        merge on "Ticker" (how="left")
+                    │
+                    ▼
+        pipeline.distorions_analysys  ──► + ranking cross-sectional, {média, std_vol}
+                    │
+                    ▼
+        pipeline.distorted_price_analysis ──► nlargest(5) ++ nsmallest(5)
+                    │
+                    ▼
+                RunResult ──► persistence.grava_latest ──► latest.json + latest.xlsx
+                                                                  │
+                                                                  ▼
+                                                   site/assets/app.js (fetch ./data/latest.json)
+```
 
-- `robusta/config.py` — single source of `VERSION`, MMA windows (`MMA_WINDOWS = (9,10,26,50,150,200)`), `VOL_WINDOW = 30`, `HISTORICO_ANOS = 5`, Excel paths, `PASTA_RUNS`, Fundamentus base URL, and the `eh_primeiro_dia_util_do_mes` calendar helper.
-- `robusta/data.py` — sole IO boundary: `ler_lista_tickers`, `ler_fundamentos_cache`, `baixa_cotacoes_yahoo` (with exponential-backoff retry on `YFRateLimitError`), `baixa_html_fundamentus`, and `carrega_fundamentos` (scrapes only on the first business day of the month, otherwise reads the Excel cache; takes the scraper as an injected `raspar_fn` so it stays testable).
-- `robusta/technical.py` — análise técnica completa (T1–T7): `crie_variacao`, `crie_medias_moveis`, `calcule_volatilidade_anualizada_std`, `alto_volume_persistente`, `add_price_concentration_levels_by_me` (cria as 8 colunas `*_by_mslf` — B1 corrigido), `extrai_cotacoes` (delega o download a `data.baixa_cotacoes_yahoo` e remove os artefatos GOAU3/prints), e `screener`. O `screener` devolve `(carteira_automatica, precos_por_ticker)`, onde `precos_por_ticker: Dict[str, float]` (ticker base → último `Close`) é o handoff que substitui o antigo global `data_cache_backtest` e alimenta a fase fundamentalista.
-- `robusta/fundamental.py` — análise fundamentalista completa (F1–F10): `puxar_dados` (HTTP + parse), `formatar_tabela` (limpeza + transposição + `Papel → Ticker` maiúsculo — B2 resolvido), `gera_indicadores_extras` (recalcula P/L, P/VP, Dív.Líquida/VM consumindo `precos_por_ticker`), `rankeia_outros_indicadores_maior_melhor` / `_menor_melhor` (decil via helper `_classe_decil` com `qcut` protegido contra empates e `.fillna(0)` agora atribuído), `avaliacao_fundamentalista` (score por setor financeiro/geral), `rankeando_empresas` (melhor/pior por setor), `avaliacao_fundamentalista_analisys` (sinal `Fundamental_?value` por faixas: ≥32→1, ≤14→-1, senão 0), `adicione_indicadores_e_ranking` (orquestrador F3→F8), `varre_lista` (scraper iterativo com `pd.concat` único em vez de em loop).
-- `robusta/pipeline.py` — pipeline consolidado: `distorions_analysys` (ranking cross-sectional, preserva `{média, std_vol}`), `distorted_price_analysis` (sinais top5/bottom5 — duas correções: continuação de linha e copy-paste MMA50→MMA10), a dataclass `RunResult` (`schema_version`, `run_id`, `generated_at`, `robusta_version`, `input_universe`, `summary`, `portfolio_signals`, `merged_results`, `warnings`, `failed_tickers`), e o orquestrador `executa_pipeline` que conecta técnica + fundamental + merge + ranking.
-- `robusta/persistence.py` — serialização do `RunResult` em `latest.json` + `latest.xlsx`. Mapa coluna→chave JSON em `COLUNA_PARA_JSON`, encoder customizado para `numpy.int64/float64/bool_` + `pandas.Timestamp` + `NaN → null`. Escrita atômica (`<arquivo>.tmp` + `Path.replace`) garante que o nginx nunca sirva arquivo pela metade. **Guarda contra execução degenerada**: se `tickers_ok == 0` ou taxa de falha > 50%, não sobrescreve `latest.json` — grava em `last_failed_run.json` e levanta `RuntimeError`.
-- `robusta/cli.py` + `robusta/__main__.py` — entrypoint `python -m robusta run`. Quatro flags: `--tickers` (dev/debug), `--export-xlsx` (ad-hoc), `--refresh-fundamentos` (bypass do gate mensal), `--emit-latest` (cron de produção).
+### Módulos
 
-### Pipeline flow (`pipeline.executa_pipeline`)
-
-1. **Technical analysis** — `screener()` itera sobre os tickers líquidos, chama `extrai_cotacoes()` para cada um (baixa OHLCV do Yahoo Finance com `.SA` para B3), e pipa o DataFrame por `crie_variacao` → `crie_medias_moveis` → `calcule_volatilidade_anualizada_std` → `alto_volume_persistente` → `add_price_concentration_levels_by_me`. Devolve `(carteira_automatica, precos_por_ticker)`.
-2. **Fundamental analysis** — `varre_lista()` raspa fundamentus.com.br para cada ticker (ou lê o cache mensal). `formatar_tabela()` limpa o HTML. `adicione_indicadores_e_ranking()` recalcula ratios price-dependent usando `precos_por_ticker`, classifica cada indicador em decis (1–10) com `pandas.qcut` (protegido contra empates), e produz `avaliacao_fundamentalista` + sinal `Fundamental_?value`.
-3. **Merge & rank** — merge técnico+fundamental por `Ticker`. `distorions_analysys` adiciona o ranking cross-sectional e preserva `{média, std_vol}` (que o legado descartava) no `summary`. `distorted_price_analysis` produz `portfolio_signals` (top/bottom do `distortion_ranking`).
-4. **Persistence (opcional, via `--emit-latest`)** — `persistence.grava_latest(run_result, pasta)` serializa o `RunResult` em `<pasta>/latest.json` (todo o universo, indexado por ticker) e `<pasta>/latest.xlsx` (`merged_results` exportado).
-
-### Target deployment architecture
-
-Production target (Phase 8): VPS Linux (Hostinger), domínio próprio + HTTPS via Let's Encrypt, audiência pessoal sem autenticação.
-
-- **System cron** dispara `python -m robusta run --emit-latest --refresh-fundamentos?` 3×/dia (seg–sex, 12:30 / 16:00 / 21:30 UTC = 09:30 / 13:00 / 18:30 BRT). Sem scheduler Python permanente.
-- **nginx** serve `site/` como root estático e expõe `~/robusta/var/latest.json` + `latest.xlsx` em `/data/`.
-- **Frontend** (`site/`): HTML + CSS + JS vanilla, sem framework, sem build step. `index.html` mostra dashboard de top/bottom signals; `ticker.html?ticker=XXXX` é drill-down individual; `site/data/carteira.json` (editado manualmente) lista a carteira pessoal e é cruzado com `latest.json` em runtime.
-
-Não há histórico de runs (sem `runs/<timestamp>.json`), sem symlinks, sem API Python permanente.
-
-### JSON Contract (resumido)
-
-`latest.json` schema (definição completa em `planning/PLAN.md > JSON Contract`):
-
-- `schema_version` (int, atualmente `1`), `run_id` (ISO 8601 sem `:`), `generated_at`, `robusta_version`.
-- `input_universe` (lista de tickers base, sem `.SA`).
-- `summary` — `tickers_ok`, `tickers_failed`, `vol_media`, `vol_std`.
-- `portfolio_signals` — `{longs: [...], shorts: [...]}`.
-- `tickers` — dict `{TICKER: {...}}` com todos os campos (técnica + fundamental + ranking), chaves em snake_case ASCII (mapeamento em `persistence.COLUNA_PARA_JSON`).
-- `warnings`, `failed_tickers`.
-
-Convenções: `NaN`/`None` → `null` JSON (campo presente, valor `null` — nunca key omitida); `pandas.Timestamp` → ISO 8601; `numpy.int64/float64` → nativos via encoder; sentinelas `"Abismo"`/`"Foguete"` dos níveis `*_by_mslf` mantêm tipo string.
-
-### Input files
-
-| File | Purpose |
+| Módulo | Responsabilidade |
 |---|---|
-| `lista_tickers_liquidos.xlsx` | Ticker list used in daily runs (única fonte de universo) |
-| `all_ticker_financial_indicators.xlsx` | Cached fundamental data refreshed on the first business day of the month |
-| `site/data/carteira.json` (futuro / Fase 7d) | Carteira pessoal `{tickers: [...]}` editada manualmente |
+| `robusta/config.py` | `VERSION`, `MMA_WINDOWS = (9,10,26,50,150,200)`, `VOL_WINDOW = 30`, `HISTORICO_ANOS = 2`, caminhos Excel, URL do Fundamentus, `eh_primeiro_dia_util_do_mes` |
+| `robusta/data.py` | **Única fronteira de IO**: Excel, Yahoo (com backoff em `YFRateLimitError`), HTTP do Fundamentus, e o gate de cache mensal |
+| `robusta/technical.py` | T1–T7: variação, MMAs, volatilidade anualizada, volume persistente, níveis `*_by_mslf`, `extrai_cotacoes`, `screener` |
+| `robusta/fundamental.py` | F1–F10: scrape/parse, indicadores recalculados por preço, rankings decil (`_classe_decil`), `avaliacao_fundamentalista`, sinal `Fundamental_?value`, `varre_lista` |
+| `robusta/pipeline.py` | `distorions_analysys`, `distorted_price_analysis`, dataclass `RunResult`, orquestrador `executa_pipeline` |
+| `robusta/persistence.py` | `COLUNA_PARA_JSON`, encoder numpy/pandas → JSON nativo, escrita atômica, guarda de execução degenerada |
+| `robusta/cli.py` + `__main__.py` | `python -m robusta run` com as 5 flags acima |
 
-### Ticker conventions
+### Semântica do sinal (fácil de inverter por engano)
 
-- Internal ticker format: `PRIO3`, `LREN3` (sem `.SA`).
-- Yahoo Finance format: `PRIO3.SA` (anexado em `extrai_cotacoes` antes do download).
-- Fundamentus scraping usa o ticker base direto.
-- Handoff técnica → fundamentalista: `Dict[str, float]` com ticker base → último `Close` (sem `.SA`).
+`distortion_ranking = (avaliacao_fundamentalista - 40) * -1 + %_to_MMA50_Categoria * 4 + %_to_MMA10_Categoria * 1`
 
-## Phase status (mirror `planning/PLAN.md` — keep both in sync)
+Valor **alto** = preço esticado + fundamento fraco → **shorts**. Valor **baixo** = preço descontado + fundamento forte → **longs**. Por isso `persistence._portfolio_dict` mapeia a primeira metade (`nlargest`) para `shorts` e a segunda (`nsmallest`) para `longs`, enquanto a coluna renomeada continua se chamando `Major->Long` (nome herdado do legado — não é indicação de direção). Em universos pequenos as duas metades se sobrepõem; comportamento preservado do legado.
 
-- Phase 1 — baseline (column schema + fixtures + conftest) ✅ done
-- Phase 2 — `robusta/config.py` + `robusta/data.py` ✅ done
-- Phase 3 — análise técnica T1–T7 ✅ done
-- Phase 4 — fundamentalista F1–F10 ✅ done
-- Phase 5 — pipeline consolidado + `RunResult` ✅ done
-- Phase 6 — persistência `latest.json` + `latest.xlsx` ✅ done
-- Phase 7 — frontend estático (sub-fases 7a–7e) 🚧 em progresso
-- Phase 8 — VPS + nginx + cron — não iniciada
+### Persistência e guardas
 
-## Legacy bugs and fixes already in the rebuild
+- Escrita atômica: `<arquivo>.tmp` + `Path.replace`, para o Pages nunca servir arquivo pela metade.
+- **Execução degenerada** (`tickers_ok == 0` ou taxa de falha > 50%): `latest.json` **não** é sobrescrito; o payload ruim vai para `last_failed_run.json` (gitignored) e `grava_latest` levanta `RuntimeError`, fazendo o job do Actions falhar.
+- **Fail-fast em `adicione_indicadores_e_ranking`**: DataFrame de fundamentos vazio levanta `RuntimeError` com mensagem clara, em vez do `KeyError` críptico 100 frames adiante.
+- `carrega_fundamentos` raspa quando: `forcar_raspagem=True`, **ou** é o 1º dia útil do mês, **ou** o cache não existe/está vazio (auto-recuperação).
 
-These bugs lived in the (now-removed) `main.py` monolith. They are documented here because (a) `scripts_antigos/main.py` still has them and may be consulted for reference, and (b) `tests/baseline/COLUMN_SCHEMA.md` codifies the legacy column layout that the rebuild had to faithfully reproduce.
+### JSON Contract (`latest.json`, `schema_version: 1`)
 
-All items below are **fixed in `robusta/`**:
+Chaves de topo: `schema_version`, `run_id` (ISO com `:` trocado por `-`), `generated_at`, `robusta_version`, `input_universe`, `summary` (`tickers_ok`, `tickers_failed`, `vol_media`, `vol_std`), `portfolio_signals` (`{longs, shorts}`), `tickers` (dict indexado por ticker, todos os campos técnicos+fundamentais em snake_case ASCII via `persistence.COLUNA_PARA_JSON`), `warnings`, `failed_tickers`.
 
-- **Hardcoded ticker override** (legacy lines 1336–1337): `gere_df_principal` overwrote the Excel list with `{'ticker':['PRIO3','ASAI3','LREN3']}`. → `robusta.data.ler_lista_tickers` is the single source of universe.
-- **Inverted cache logic** (legacy 1345–1357): scraped Fundamentus on every non-first-of-month run, loaded cache only on day 1. → `robusta.data.carrega_fundamentos` scrapes only on the 1st business day and caches; reads cache otherwise. `--refresh-fundamentos` bypasses the gate on demand.
-- **`YFRateLimitError` not imported** (legacy line 261): `except` raised `NameError` on first rate-limit. → `robusta.data` imports it and applies exponential backoff.
-- **`send_whatsapp_messages` + Twilio credentials**: hardcoded plaintext, `client` commented out, called at end of every run → crash. → Removed entirely from the rebuild.
-- **Debug `yfinance.download('GOAU3')` in `extrai_cotacoes`**: downloaded irrelevant data on every ticker. → Dropped in T6, along with the redundant second download and the prints.
-- **B1 — silent assignment in `add_price_concentration_levels_by_me`**: 8 `*_by_mslf` columns were assigned with `:` (annotation) instead of `=`, so the function silently returned a DataFrame missing them. → T5 uses `=` and asserts the 8 columns.
-- **B2 — merge key mismatch**: `formatar_tabela` renamed `Papel` → `ticker` (lowercase) but `gere_df_principal` merged on `Ticker`. → F2 renames to `Ticker` (capital), standardizing across the pipeline.
-- **`hora_atual` and `eh_dia_util` overrides**: hardcoded `"19:00"` and `True` made the scheduler fire on every run. → Legacy `main.py` removed; cron handles scheduling in the new architecture.
-- **`.fillna(0)` without assignment** (legacy ~1085, ~1112): result discarded, NaNs leaked into `avaliacao_fundamentalista`. → F4/F5 assign the `.fillna(0)` result; F5 also covers the `neg_bloqueado` path.
-- **`pandas.qcut` without dup protection**: empates rebentavam em universos pequenos. → `_classe_decil` em F4/F5 protege com `duplicates='drop'` + fallback.
-- **`pd.concat` in loop in `varre_lista`**: O(n²) concat. → F10 acumula em lista e faz `concat` único.
-- **Filename with leading space** `' carteira_automatica.xlsx'`: n/a — export Excel só via flag explícita.
+Convenções: `NaN`/`None` → `null` (a chave sempre existe, nunca é omitida); `pandas.Timestamp` → ISO 8601; `numpy.int64/float64/bool_` → nativos. As sentinelas `"Abismo"`/`"Foguete"` dos níveis `*_by_mslf` permanecem strings e o frontend tem tratamento específico para elas. Definição completa em `planning/PLAN.md > JSON Contract`.
 
-The full list and the **invariants** that separate "bug to fix" from "methodology to preserve" live in `planning/PLAN.md > Fronteira bug vs metodologia`.
+**Limitação conhecida**: `Setor` sai `null` no `merged_results` — `rankeando_empresas` (F7) faz `groupby('Setor').apply().reset_index(drop=True)` e o pandas descarta a coluna do groupby. `Subsetor` está OK e é o que o dashboard usa. Não é bug a corrigir sem pedido.
 
-## Porting rules (active for Phases 7–8)
+### Frontend (`site/`)
 
-- **One function per phase**; keep existing return types until a later phase explicitly changes them.
-- Each phase ships with a fast test using a small fixture or network mock before moving on. The only acceptable verification command is `pytest` from the repo root — REPL/scratch scripts do not count as evidence for marking a phase `[x]`.
-- **Tests must not touch the network**: use the OHLCV CSV fixtures, the Fundamentus HTML fixture, and `latest_mock.json` in `tests/fixtures/`, or inject scrapers/downloaders as arguments (see `carrega_fundamentos(raspar_fn=...)` for the pattern).
-- **Global state is forbidden**: the technical→fundamentalist handoff is `Dict[str, float]` mapping base ticker (no `.SA`) to last close — passed as an explicit argument (`precos_por_ticker`).
-- **Fronteira bug vs metodologia**: only fix things the legacy clearly meant to do (see bug list above + invariants in `PLAN.md`). Indicator names, weights, thresholds, window sizes — never change without explicit ask.
-- **Visual frontend changes (Phase 7)**: the assistant cannot see the rendered site. Automated tests cover JS syntax + file presence; **visual review is the user's responsibility** at each sub-phase 7b/7c/7d. Saying "está pronto" without a user visual pass is a meia-verdade.
+HTML + CSS + JS vanilla, sem framework, sem build step, sem npm. `assets/app.js` faz `fetch("./data/latest.json")` e `fetch("./data/carteira.json")` (caminhos **relativos** — o site vive num subpath do GitHub Pages) e expõe tudo em `window.ROBUSTA`. `index.html` é o dashboard long/short; `ticker.html?ticker=XXXX` é o drill-down (navegação full-page por URL, sem SPA). `site/data/carteira.json` (`{"tickers": [...]}`) é editado à mão e cruzado com `latest.json` em runtime.
+
+**O assistant não consegue ver o site renderizado.** Os testes cobrem sintaxe JS e presença de placeholders; validação visual é responsabilidade do usuário. Dizer "está pronto" sem passe visual do usuário é meia-verdade.
+
+### Deploy (GitHub Actions + Pages — não há VPS)
+
+- `.github/workflows/run-pipeline.yml`: cron seg–sex `12:37`, `16:13`, `21:43` UTC (= 09:37 / 13:13 / 18:43 BRT; minutos primos evitam a fila do Actions em horário redondo) + `workflow_dispatch`. Roda `python -m robusta run --emit-latest site/data` e o `github-actions[bot]` commita `site/data/latest.json` + `latest.xlsx` na `main`.
+- `.github/workflows/deploy-pages.yml`: publica `site/` no Pages. Dispara em `push` para `site/**` **e** via `workflow_run` após o pipeline — esse segundo trigger é necessário porque commits feitos com o `GITHUB_TOKEN` não disparam workflows por design do GitHub.
+- `site/data/latest.json` e `latest.xlsx` são **versionados de propósito** (o `.gitignore` documenta isso). Rodar `--emit-latest site/data` localmente os sobrescreve e suja o working tree.
+
+### Gotcha operacional: Fundamentus bloqueia IPs de datacenter
+
+Diagnóstico confirmado em `planning/falha_cron.md`: o mesmo código raspa 79/79 tickers de um IP residencial brasileiro e falha 79/79 do runner do GitHub Actions (anti-bot por ASN). Mitigações já aplicadas: User-Agent realista em `data._HEADERS_FUNDAMENTUS`, fail-fast com DF vazio, flag `--debug-fundamentos`. Se um run do CI falhar no scrape, esse documento tem as opções de plano-B — não re-diagnostique do zero.
+
+## Input files
+
+| Arquivo | Papel |
+|---|---|
+| `lista_tickers_liquidos.xlsx` | **Única** fonte do universo (~79 tickers). Não há lista embutida no código |
+| `all_ticker_financial_indicators.xlsx` | Cache mensal do Fundamentus; sobrescrito quando o gate de raspagem abre |
+| `site/data/carteira.json` | Carteira pessoal, editada à mão |
+
+Os nomes de coluna do cache real trazem mojibake herdado (`Nro. A��es`, `D�v. L�quida`) — é esperado, não "conserte" sem pedido.
+
+## Convenções
+
+- **Ticker base** (`PRIO3`, sem `.SA`) é o formato interno. O sufixo `.SA` só aparece dentro de `technical.extrai_cotacoes` / `data.baixa_cotacoes_yahoo`.
+- **Nomes de domínio em português** (`crie_medias_moveis`, `avaliacao_fundamentalista`, `varre_lista`) e docstrings em português. Mantenha ao estender. `snake_case` para funções/variáveis, `UPPER_CASE` só para constantes.
+- **Sem estado global**: o handoff técnica→fundamental é o argumento explícito `precos_por_ticker`.
+- **Testes não tocam a rede**: use as fixtures em `tests/fixtures/` (OHLCV CSVs de PRIO3/ASAI3/LREN3 com 260 sessões, HTML do Fundamentus, `latest_mock.json`) ou injete o downloader/scraper (padrão de `carrega_fundamentos(raspar_fn=...)`).
+- **Fronteira bug vs metodologia**: nomes de indicadores, pesos, thresholds e janelas **nunca** mudam sem pedido explícito. Só corrija o que o legado claramente pretendia fazer. Invariantes em `planning/PLAN.md > Fronteira bug vs metodologia`.
+- Commits: sumários curtos e imperativos, uma língua por PR. Não confunda seus commits com os do bot (`bot: update latest (...)`), que dominam o `git log`.
+
+## Bugs do legado já corrigidos (não reintroduzir)
+
+Todos corrigidos em `robusta/`; `tests/baseline/COLUMN_SCHEMA.md` codifica o layout de colunas que o rebuild teve de reproduzir fielmente.
+
+- Override hardcoded do universo (`{'ticker':['PRIO3','ASAI3','LREN3']}`) → `data.ler_lista_tickers` é a única fonte.
+- Lógica de cache **invertida** (raspava todo dia menos o 1º) → `carrega_fundamentos` raspa só no 1º dia útil (+ flags/fallback).
+- `YFRateLimitError` não importado → importado, com backoff exponencial.
+- `send_whatsapp_messages` + credenciais Twilio em texto plano → removidos por completo.
+- `yfinance.download('GOAU3')` de debug em todo ticker → removido.
+- **B1**: as 8 colunas `*_by_mslf` atribuídas com `:` (anotação) em vez de `=` — a função devolvia DataFrame sem elas.
+- **B2**: `formatar_tabela` renomeava `Papel` → `ticker` minúsculo, mas o merge usava `Ticker`.
+- `.fillna(0)` sem atribuição nos rankings (resultado descartado, NaN vazava para o score).
+- `pandas.qcut` sem `duplicates='drop'` → estourava em universos com empates; hoje via `_classe_decil`.
+- `pandas.concat` dentro do loop de `varre_lista` → acumula em lista e concatena uma vez.
+- Fórmula do `distortion_ranking`: continuação de linha quebrada (as parcelas de MMA eram statements soltos e descartados) + copy-paste de `%_to_MMA50_Categoria` na parcela que deveria usar `%_to_MMA10_Categoria`. Ambos corrigidos por decisão explícita do usuário.
+
+## Hierarquia de documentos
+
+- `CLAUDE.md` — fatos do repo, arquitetura, estado atual (este arquivo).
+- `BEHAVIORAL_GUIDELINES.md` — processo: mudanças cirúrgicas, simplicidade, surfacing de incerteza. Leia antes de mudanças não triviais.
+- `planning/PLAN.md` — plano de rebuild fase a fase, JSON Contract completo, invariantes de metodologia.
+- `planning/falha_cron.md` — pós-mortem do bloqueio do Fundamentus no CI.
+- `planning/ADVERSARIAL_REVIEW.md` — análise adversarial do plano.
+- `README.md` — visão pública do projeto (menciona `scripts_antigos/`, que já não existe).
+- `AGENTS.md` — **desatualizado**: descreve o projeto como script único `main.py`. Vale só pelas seções de estilo e convenções de commit/PR.
+- `planning/REVIEW.md` — pitch executivo antigo (fala de FastAPI e scheduler que não existem mais).
