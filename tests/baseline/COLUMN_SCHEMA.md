@@ -100,3 +100,17 @@ descartado (Fase 5 preserva para o `summary` do JSON).
   execucao completa do `main.py` legado. Por isso o baseline e estatico.
 
 A lista completa de bugs a corrigir no porte esta em `planning/PLAN.md`.
+
+---
+
+## Mudancas pos-baseline (metodologia, a pedido do usuario)
+
+O baseline acima e o retrato do legado. Alteracoes deliberadas feitas depois:
+
+- `crie_distancia_padronizada(df, (9,10,26,50,150,200), 252)`, chamada logo
+  apos `crie_medias_moveis`, acrescenta `Z_to_MMA{n}` para cada `n`
+  (`%_to_MMA{n}` / desvio-padrao movel de 252 pregoes de `%_to_MMA{n}`).
+- `distorions_analysys` passa a criar `Z_to_MMA50_Categoria` e
+  `Z_to_MMA10_Categoria` (decis de `Z_to_MMA50`/`Z_to_MMA10`) **no lugar de**
+  `%_to_MMA50_Categoria` e `%_to_MMA10_Categoria`; o `distortion_ranking` usa
+  as categorias de Z.

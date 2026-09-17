@@ -71,6 +71,34 @@ def crie_medias_moveis(stock_data, lista_args):
     return stock_data
 
 
+def crie_distancia_padronizada(stock_data, lista_args, z_window):
+    """Acrescenta `Z_to_MMA{n}`: a distancia ate a media comparada com o
+    proprio passado do papel.
+
+    `%_to_MMA{n}` compara papeis entre si, mas "longe da media" e relativo:
+    -12% num papel calmo e um evento; num papel volatil e um dia comum.
+    Dividir a distancia pelo desvio-padrao movel dela mesma diz quantos
+    desvios tipicos a distancia de hoje representa para *aquele* papel.
+
+    Para cada `n` em `lista_args` (normalmente `config.MMA_WINDOWS`):
+      - `Z_to_MMA{n}` = `%_to_MMA{n}` / desvio-padrao movel de `%_to_MMA{n}`
+        nos ultimos `z_window` pregoes (janela causal: so passado e hoje).
+
+    Espera as colunas `%_to_MMA{n}` ja criadas por `crie_medias_moveis`, que
+    nao sao alteradas. `Z_to_MMA50` e `Z_to_MMA10` alimentam os decis do
+    `distortion_ranking` (`pipeline.distorions_analysys`). A
+    razao nao tem unidade, entao usar a distancia em % ou em fracao da o
+    mesmo valor. Fica NaN enquanto a janela nao esta completa (exige
+    `n + z_window - 1` pregoes) e onde o desvio e zero, em vez de infinito.
+    """
+    for n in lista_args:
+        distancia = stock_data[f"%_to_MMA{n}"]
+        desvio = distancia.rolling(window=z_window).std().replace(0.0, np.nan)
+        stock_data[f"Z_to_MMA{n}"] = distancia / desvio
+
+    return stock_data
+
+
 def calcule_volatilidade_anualizada_std(dados, vol_window):
     """Acrescenta `vol_anualized_{vol_window}days` ao DataFrame.
 
@@ -308,6 +336,7 @@ def extrai_cotacoes(ticker):
 
     stock_data = crie_variacao(stock_data, 1)
     stock_data = crie_medias_moveis(stock_data, config.MMA_WINDOWS)
+    stock_data = crie_distancia_padronizada(stock_data, config.MMA_WINDOWS, config.Z_WINDOW)
     stock_data = calcule_volatilidade_anualizada_std(stock_data, config.VOL_WINDOW)
     stock_data = alto_volume_persistente(stock_data)
     stock_data = add_price_concentration_levels_by_me(stock_data)

@@ -39,6 +39,7 @@ def _merged_minimo():
             "Position_MMA50": -1, "Position_MMA150": -1, "Position_MMA200": -1,
             "%_to_MMA9": -1.5, "%_to_MMA10": -1.96, "%_to_MMA26": -7.89,
             "%_to_MMA50": -15.12, "%_to_MMA150": -15.88, "%_to_MMA200": -14.73,
+            "Z_to_MMA10": -0.42, "Z_to_MMA50": -2.31,
             "vol_anualized_30days": 0.287,
             "Alto_volume_persistente": 1,
             "sup_min_by_mslf": "Abismo",
@@ -60,7 +61,7 @@ def _merged_minimo():
             "avaliacao_fundamentalista": 31,
             "Posicao setorial": "pior",
             "Fundamental_?value": 0,
-            "%_to_MMA50_Categoria": 5, "%_to_MMA10_Categoria": 5,
+            "Z_to_MMA50_Categoria": 5, "Z_to_MMA10_Categoria": 5,
             "Vol Mês^Anual_?value": 0,
             "distortion_ranking": 34,
         },
@@ -75,6 +76,7 @@ def _merged_minimo():
             "Position_MMA50": 1, "Position_MMA150": 1, "Position_MMA200": 1,
             "%_to_MMA9": 4.5, "%_to_MMA10": 4.5, "%_to_MMA26": 6.9,
             "%_to_MMA50": 8.1, "%_to_MMA150": 8.7, "%_to_MMA200": 9.3,
+            "Z_to_MMA10": 1.05, "Z_to_MMA50": 1.12,
             "vol_anualized_30days": 0.305,
             "Alto_volume_persistente": 0,
             "sup_min_by_mslf": 8.2, "sup_med_by_mslf": 8.6, "sup_max_by_mslf": 9.2,
@@ -91,7 +93,7 @@ def _merged_minimo():
             "avaliacao_fundamentalista": 22,
             "Posicao setorial": "melhor",
             "Fundamental_?value": 0,
-            "%_to_MMA50_Categoria": 8, "%_to_MMA10_Categoria": 8,
+            "Z_to_MMA50_Categoria": 8, "Z_to_MMA10_Categoria": 8,
             "Vol Mês^Anual_?value": 0,
             "distortion_ranking": 77,
         },
@@ -209,6 +211,8 @@ def test_constroi_payload_mapeia_colunas_snake_case_ascii():
     assert prio["mma200"] == pytest.approx(56.02)
     assert prio["pct_to_mma10"] == pytest.approx(-1.96)
     assert prio["pct_to_mma50"] == pytest.approx(-15.12)
+    assert prio["z_to_mma10"] == pytest.approx(-0.42)
+    assert prio["z_to_mma50"] == pytest.approx(-2.31)
 
     # Niveis MSLF (preservam nome original)
     assert prio["sup_min_by_mslf"] == "Abismo"

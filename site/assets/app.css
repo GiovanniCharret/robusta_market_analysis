@@ -225,6 +225,10 @@ a:hover { text-decoration: underline; }
 }
 .row .val.up   { color: var(--olive); }
 .row .val.down { color: var(--rust); }
+/* % e Z lado a lado, alinhados a direita em colunas de largura fixa */
+.row .vals { display: flex; gap: 14px; }
+.row .vals .val { min-width: 8ch; text-align: right; }
+.row .vals .val.z { min-width: 6ch; }
 
 .search-line {
   max-width: 420px;

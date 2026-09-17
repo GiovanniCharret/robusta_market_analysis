@@ -57,6 +57,8 @@ COLUNA_PARA_JSON = {
     "MMA200": "mma200",
     "%_to_MMA10": "pct_to_mma10",
     "%_to_MMA50": "pct_to_mma50",
+    "Z_to_MMA10": "z_to_mma10",
+    "Z_to_MMA50": "z_to_mma50",
     # técnica - níveis (nomes preservados)
     "sup_min_by_mslf": "sup_min_by_mslf",
     "sup_med_by_mslf": "sup_med_by_mslf",

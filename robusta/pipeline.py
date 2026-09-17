@@ -24,14 +24,18 @@ def distorions_analysys(todas_montagens):
     Acrescenta tres colunas e devolve, alem do DataFrame, a media e o desvio
     padrao da volatilidade anualizada (que o legado descartava e a Fase 5
     preserva para o `summary` do JSON):
-      - `%_to_MMA50_Categoria`, `%_to_MMA10_Categoria` — percentil (1..10) da
-        distancia para a MMA, via `rank(pct=True)`.
+      - `Z_to_MMA50_Categoria`, `Z_to_MMA10_Categoria` — percentil (1..10) da
+        distancia padronizada para a MMA (`Z_to_MMA{n}`, ver
+        `technical.crie_distancia_padronizada`), via `rank(pct=True)`.
       - `Vol Mês^Anual_?value` — `1` se a vol esta abaixo de (media - desvio),
         `-1` se acima de (media + desvio), `0` caso contrario.
 
     Porte fiel de `main.py:745-775`: o nome (com o typo "distorions") e os
     nomes das colunas sao preservados porque estao no baseline
-    (`tests/baseline/COLUMN_SCHEMA.md`). Devolve `(df, {'média', 'std_vol'})`.
+    (`tests/baseline/COLUMN_SCHEMA.md`). Mudanca de metodologia a pedido do
+    usuario: os decis, antes sobre `%_to_MMA{n}` (papel contra papel), agora
+    saem de `Z_to_MMA{n}` (distancia medida contra o proprio passado do
+    papel). Devolve `(df, {'média', 'std_vol'})`.
     """
     media = todas_montagens["vol_anualized_30days"].mean()
     std_vol = todas_montagens["vol_anualized_30days"].std()
@@ -46,11 +50,11 @@ def distorions_analysys(todas_montagens):
             .astype(int)
         )
 
-    todas_montagens["%_to_MMA50_Categoria"] = categorizar_percentil(
-        todas_montagens["%_to_MMA50"]
+    todas_montagens["Z_to_MMA50_Categoria"] = categorizar_percentil(
+        todas_montagens["Z_to_MMA50"]
     )
-    todas_montagens["%_to_MMA10_Categoria"] = categorizar_percentil(
-        todas_montagens["%_to_MMA10"]
+    todas_montagens["Z_to_MMA10_Categoria"] = categorizar_percentil(
+        todas_montagens["Z_to_MMA10"]
     )
 
     todas_montagens["Vol Mês^Anual_?value"] = todas_montagens[
@@ -64,7 +68,8 @@ def distorted_price_analysis(todas_montagens, mma50_wgh, mma10_wgh):
     """Seleciona as maiores oportunidades de long/short por preco distorcido.
 
     Calcula `distortion_ranking` combinando o score fundamentalista (invertido
-    em torno de 40) com a distancia categorizada as medias de 50 e 10 dias, e
+    em torno de 40) com a distancia padronizada categorizada as medias de 50 e
+    10 dias (`Z_to_MMA50_Categoria`, `Z_to_MMA10_Categoria`), e
     devolve os 5 maiores (long) e 5 menores (short), com as colunas
     `['Ticker', 'Subsetor', 'Major->Long', '%_to_MMA10']`.
 
@@ -77,13 +82,13 @@ def distorted_price_analysis(todas_montagens, mma50_wgh, mma10_wgh):
         (MMA50 * mma50_wgh + MMA10 * mma10_wgh).
       - Removido o `to_excel` (side effect proibido no fluxo normal).
 
-    Requer as colunas de `distorions_analysys` (`%_to_MMA50_Categoria`,
-    `%_to_MMA10_Categoria`); o orquestrador garante a ordem.
+    Requer as colunas de `distorions_analysys` (`Z_to_MMA50_Categoria`,
+    `Z_to_MMA10_Categoria`); o orquestrador garante a ordem.
     """
     todas_montagens["distortion_ranking"] = (
         (todas_montagens["avaliacao_fundamentalista"] - 40) * -1
-        + todas_montagens["%_to_MMA50_Categoria"] * mma50_wgh
-        + todas_montagens["%_to_MMA10_Categoria"] * mma10_wgh
+        + todas_montagens["Z_to_MMA50_Categoria"] * mma50_wgh
+        + todas_montagens["Z_to_MMA10_Categoria"] * mma10_wgh
     )
 
     top_5 = todas_montagens.nlargest(5, "distortion_ranking")

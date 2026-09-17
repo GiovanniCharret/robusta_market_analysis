@@ -59,6 +59,10 @@
             <div class="v" id="fund-pct-mma50">—</div>
           </div>
           <div class="item">
+            <div class="k">distância padronizada da MMA50</div>
+            <div class="v" id="fund-z-mma50">—</div>
+          </div>
+          <div class="item">
             <div class="k">std_raking_value</div>
             <div class="v" id="meta-std">—</div>
           </div>
@@ -136,6 +140,15 @@
         pctEl.classList.remove("up", "down");
         if (pctMma50 !== null && pctMma50 !== undefined) {
           pctEl.classList.add(pctMma50 >= 0 ? "up" : "down");
+        }
+
+        // Z_to_MMA50: a distancia em desvios tipicos do proprio passado
+        const zMma50 = dado.z_to_mma50;
+        const zEl = $("fund-z-mma50");
+        zEl.textContent = R.formataZ(zMma50);
+        zEl.classList.remove("up", "down");
+        if (zMma50 !== null && zMma50 !== undefined) {
+          zEl.classList.add(zMma50 >= 0 ? "up" : "down");
         }
 
         // Régua S/R

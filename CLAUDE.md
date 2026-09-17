@@ -97,7 +97,9 @@ technical.screener ──► (carteira_automatica, precos_por_ticker: Dict[str, 
 
 ### Semântica do sinal (fácil de inverter por engano)
 
-`distortion_ranking = (avaliacao_fundamentalista - 40) * -1 + %_to_MMA50_Categoria * 4 + %_to_MMA10_Categoria * 1`
+`distortion_ranking = (avaliacao_fundamentalista - 40) * -1 + Z_to_MMA50_Categoria * 4 + Z_to_MMA10_Categoria * 1`
+
+Os decis `Z_to_MMA{50,10}_Categoria` saem de `Z_to_MMA{n}` = `%_to_MMA{n}` ÷ desvio-padrão móvel de `config.Z_WINDOW` (252) pregões da própria distância (`technical.crie_distancia_padronizada`) — cada papel medido contra o próprio passado, não a distância crua. As colunas `%_to_MMA{n}` continuam existindo (e vão ao JSON como `pct_to_mma*`), mas não entram mais no ranking. `Z_to_MMA200` só existe a partir do pregão 451, e uma categoria de Z vazio vira 0 (herança do `fillna(0)`).
 
 Valor **alto** = preço esticado + fundamento fraco → **shorts**. Valor **baixo** = preço descontado + fundamento forte → **longs**. Por isso `persistence._portfolio_dict` mapeia a primeira metade (`nlargest`) para `shorts` e a segunda (`nsmallest`) para `longs`, enquanto a coluna renomeada continua se chamando `Major->Long` (nome herdado do legado — não é indicação de direção). Em universos pequenos as duas metades se sobrepõem; comportamento preservado do legado.
 

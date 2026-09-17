@@ -19,6 +19,9 @@ VERSION = "13"
 MMA_WINDOWS = (9, 10, 26, 50, 150, 200)
 # Janela da volatilidade anualizada, em dias.
 VOL_WINDOW = 30
+# Janela do desvio-padrao movel que padroniza a distancia ate a media
+# (Z_to_MMA{n} = %_to_MMA{n} / desvio movel), em pregoes: um ano.
+Z_WINDOW = 252
 # Anos de historico de cotacoes baixados da Yahoo Finance.
 HISTORICO_ANOS = 2
 

@@ -30,12 +30,12 @@
     <div class="lists" id="lists" hidden>
       <div class="col">
         <div class="col-title">long</div>
-        <div class="col-sub">%_to_MMA50</div>
+        <div class="col-sub">%_to_MMA50 · Z_to_MMA50</div>
         <div id="long-list"></div>
       </div>
       <div class="col">
         <div class="col-title">short</div>
-        <div class="col-sub">%_to_MMA50</div>
+        <div class="col-sub">%_to_MMA50 · Z_to_MMA50</div>
         <div id="short-list"></div>
       </div>
     </div>
@@ -79,12 +79,19 @@
         const pct = todosTickers[ticker]?.pct_to_mma50;
         const val = window.ROBUSTA.formataPercentual(pct);
         const cls = (pct ?? 0) >= 0 ? "up" : "down";
+        // Distancia padronizada: e ela que entra no distortion_ranking.
+        const z = todosTickers[ticker]?.z_to_mma50;
+        const valZ = window.ROBUSTA.formataZ(z);
+        const clsZ = (z ?? 0) >= 0 ? "up" : "down";
         const a = document.createElement("a");
         a.className = "row";
         a.href = window.ROBUSTA.urlDoTicker(ticker);
         a.innerHTML =
           `<span class="tk">${ticker}</span>` +
-          `<span class="val ${cls}">${val}</span>`;
+          `<span class="vals">` +
+          `<span class="val ${cls}">${val}</span>` +
+          `<span class="val z ${clsZ}">${valZ}</span>` +
+          `</span>`;
         return a;
       }
 

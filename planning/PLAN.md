@@ -91,7 +91,7 @@ Campos relevantes dentro de cada `tickers[TICKER]`:
 
 - Identidade: `ticker`, `setor`, `subsetor`.
 - Sinais: `fundamental_signal` (-1/0/+1), `vol_signal` (-1/0/+1), `posicao_setorial` (`melhor`/`pior`/`""`).
-- Técnica: `preco`, `vol_anualizada_30d`, `mma9..mma200`, `pct_to_mma10`, `pct_to_mma50`, `alto_vol_persistente`, e os 8 níveis `sup_min_by_mslf` ... `momentum_break_by_mslf`.
+- Técnica: `preco`, `vol_anualizada_30d`, `mma9..mma200`, `pct_to_mma10`, `pct_to_mma50`, `z_to_mma10`, `z_to_mma50` (distância padronizada: distância ÷ desvio-padrão móvel de 252 pregões dela mesma), `alto_vol_persistente`, e os 8 níveis `sup_min_by_mslf` ... `momentum_break_by_mslf`.
 - Fundamental: `pl`, `pvp`, `ev_ebit`, `roic`, `cres_rec_5a`, `div_liq_vm`, `avaliacao_fundamentalista`.
 - Ranking: `distortion_ranking`.
 
