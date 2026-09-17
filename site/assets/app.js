@@ -128,6 +128,14 @@ function formataPercentual(valor) {
   return valor >= 0 ? `+${abs}%` : `−${abs}%`;
 }
 
+// Distancia padronizada (Z_to_MMA{n}): quantos desvios tipicos do proprio
+// passado o preco esta da media. Sem unidade, entao sem "%".
+function formataZ(valor) {
+  if (valor === null || valor === undefined || Number.isNaN(valor)) return "—";
+  const abs = Math.abs(valor).toFixed(2).replace(".", ",");
+  return valor >= 0 ? `+${abs}` : `−${abs}`;
+}
+
 function formataSinal(valor) {
   if (valor === null || valor === undefined) return "0";
   if (valor > 0) return "+1";
@@ -295,6 +303,7 @@ window.ROBUSTA = {
   formataData,
   formataPreco,
   formataPercentual,
+  formataZ,
   formataSinal,
   formataNivel,
   ehSentinela,

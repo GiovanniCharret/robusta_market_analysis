@@ -44,9 +44,23 @@ def test_index_html_tem_listas_long_e_short():
     # Containers que o JS preenche.
     assert 'id="long-list"' in html
     assert 'id="short-list"' in html
-    # Subtitulo da coluna numerica indica o que ela mostra (%_to_MMA50).
+    # Subtitulo das colunas numericas indica o que elas mostram: a distancia
+    # em % e a distancia padronizada (Z) que alimenta o ranking.
     # Duas vezes (uma em cada coluna long/short).
-    assert html.count('class="col-sub">%_to_MMA50</div>') == 2
+    assert html.count('class="col-sub">%_to_MMA50 · Z_to_MMA50</div>') == 2
+
+
+def test_index_html_mostra_z_ao_lado_do_percentual():
+    html = (SITE / "index.html").read_text(encoding="utf-8")
+    assert "pct_to_mma50" in html
+    assert "z_to_mma50" in html
+    assert "formataZ" in html
+
+
+def test_app_js_expoe_formatador_de_z():
+    js = (SITE / "assets" / "app.js").read_text(encoding="utf-8")
+    assert "function formataZ(" in js
+    assert "  formataZ," in js
 
 
 def test_app_js_sintaxe_valida():
@@ -109,7 +123,7 @@ def test_ticker_html_tem_placeholders_dos_blocos():
     for placeholder in [
         'id="tk-name"', 'id="tk-price"', 'id="tk-subsetor"',
         'id="fund-score"', 'id="fund-sinal"', 'id="fund-pos"',
-        'id="fund-pct-mma50"',
+        'id="fund-pct-mma50"', 'id="fund-z-mma50"',
         'id="ruler"', 'id="meta-std"', 'id="meta-momentum"',
     ]:
         assert placeholder in html, f"falta {placeholder} em ticker.html"

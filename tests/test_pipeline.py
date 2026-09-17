@@ -14,8 +14,8 @@ from robusta import data, fundamental, pipeline
 def _df_montagens(vols, mma50, mma10):
     return pd.DataFrame({
         "vol_anualized_30days": vols,
-        "%_to_MMA50": mma50,
-        "%_to_MMA10": mma10,
+        "Z_to_MMA50": mma50,
+        "Z_to_MMA10": mma10,
     })
 
 
@@ -28,19 +28,36 @@ def test_distorions_analysys_cria_colunas_e_preserva_media_std():
     resultado, stats = pipeline.distorions_analysys(df)
 
     # Colunas criadas (nomes do baseline).
-    assert "%_to_MMA50_Categoria" in resultado.columns
-    assert "%_to_MMA10_Categoria" in resultado.columns
+    assert "Z_to_MMA50_Categoria" in resultado.columns
+    assert "Z_to_MMA10_Categoria" in resultado.columns
+    assert "%_to_MMA50_Categoria" not in resultado.columns
+    assert "%_to_MMA10_Categoria" not in resultado.columns
     assert "Vol Mês^Anual_?value" in resultado.columns
 
     # Categorias sao inteiros em 1..10 (rank percentil).
-    assert resultado["%_to_MMA50_Categoria"].between(1, 10).all()
-    assert resultado["%_to_MMA50_Categoria"].iloc[-1] == 10   # maior distancia
-    assert str(resultado["%_to_MMA50_Categoria"].dtype).startswith("int")
+    assert resultado["Z_to_MMA50_Categoria"].between(1, 10).all()
+    assert resultado["Z_to_MMA50_Categoria"].iloc[-1] == 10   # maior distancia
+    assert str(resultado["Z_to_MMA50_Categoria"].dtype).startswith("int")
 
     # media/std_vol preservados (nao descartados como no legado).
     assert stats["média"] is not None
     assert stats["std_vol"] is not None
     assert stats["média"] == pytest.approx(0.3)
+
+
+def test_distorions_analysys_categoria_segue_o_z_e_nao_o_percentual():
+    """O decil vem da distancia padronizada: o papel mais longe da media em %
+    pode estar perto em desvios tipicos do proprio passado."""
+    df = pd.DataFrame({
+        "vol_anualized_30days": [0.1, 0.2],
+        "%_to_MMA50": [20.0, 2.0],   # A mais longe em %
+        "%_to_MMA10": [20.0, 2.0],
+        "Z_to_MMA50": [0.5, 3.0],    # mas B mais longe em desvios
+        "Z_to_MMA10": [0.5, 3.0],
+    })
+    resultado, _ = pipeline.distorions_analysys(df)
+    assert list(resultado["Z_to_MMA50_Categoria"]) == [5, 10]
+    assert list(resultado["Z_to_MMA10_Categoria"]) == [5, 10]
 
 
 def test_distorions_analysys_vol_value_sinais():
@@ -67,8 +84,8 @@ def _df_distortion(n=6):
         "Ticker": [f"TIC{i}" for i in range(n)],
         "Subsetor": ["Sub"] * n,
         "avaliacao_fundamentalista": [10, 20, 25, 30, 35, 40][:n],
-        "%_to_MMA50_Categoria": [1, 3, 5, 6, 8, 10][:n],
-        "%_to_MMA10_Categoria": [2, 4, 5, 7, 9, 10][:n],
+        "Z_to_MMA50_Categoria": [1, 3, 5, 6, 8, 10][:n],
+        "Z_to_MMA10_Categoria": [2, 4, 5, 7, 9, 10][:n],
         "%_to_MMA10": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6][:n],
     })
 
@@ -92,8 +109,8 @@ def test_distorted_price_analysis_usa_mma10_e_nao_mma50_duas_vezes():
         "Ticker": ["A", "B"],
         "Subsetor": ["S", "S"],
         "avaliacao_fundamentalista": [20, 20],
-        "%_to_MMA50_Categoria": [5, 5],
-        "%_to_MMA10_Categoria": [1, 9],     # so o MMA10 difere
+        "Z_to_MMA50_Categoria": [5, 5],
+        "Z_to_MMA10_Categoria": [1, 9],     # so o MMA10 difere
         "%_to_MMA10": [0.1, 0.2],
     })
     resultado = pipeline.distorted_price_analysis(df, mma50_wgh=4, mma10_wgh=1)
@@ -149,7 +166,7 @@ def test_executa_pipeline_integracao(monkeypatch, ohlcv_fixtures):
 
     # Colunas essenciais no merge (tecnica + fundamental + cross-sectional).
     for col in ("Ticker", "vol_anualized_30days", "avaliacao_fundamentalista",
-                "%_to_MMA50_Categoria", "Fundamental_?value"):
+                "Z_to_MMA50_Categoria", "Z_to_MMA10_Categoria", "Fundamental_?value"):
         assert col in resultado.merged_results.columns
 
     # summary.std_vol nao e None (requisito do PLAN) e nao ha falhas.

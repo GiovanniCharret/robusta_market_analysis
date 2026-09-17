@@ -8,7 +8,7 @@ import math
 import pandas as pd
 import pytest
 
-from robusta import data, technical
+from robusta import config, data, technical
 
 
 # --- T1: crie_variacao -----------------------------------------------------
@@ -95,6 +95,49 @@ def test_crie_medias_moveis_multiplas_janelas_geram_todas_as_colunas():
 def test_crie_medias_moveis_devolve_o_mesmo_dataframe():
     df = pd.DataFrame({"Close": [1.0, 2.0, 3.0]})
     assert technical.crie_medias_moveis(df, [2]) is df
+
+
+# --- T2b: crie_distancia_padronizada ---------------------------------------
+
+def test_crie_distancia_padronizada_divide_pelo_desvio_movel_da_propria_distancia():
+    """Z_to_MMA{n} = %_to_MMA{n} / desvio-padrao movel de %_to_MMA{n} na janela z."""
+    df = pd.DataFrame({"%_to_MMA2": [float("nan"), 1.0, 2.0, 4.0]})
+    resultado = technical.crie_distancia_padronizada(df, [2], 3)
+
+    # Janela z incompleta (inclui o NaN do aquecimento da media) -> NaN.
+    assert math.isnan(resultado["Z_to_MMA2"].iloc[1])
+    assert math.isnan(resultado["Z_to_MMA2"].iloc[2])
+    # Dia 3: distancia 4 dividida pelo desvio amostral de [1, 2, 4].
+    desvio = pd.Series([1.0, 2.0, 4.0]).std()
+    assert resultado["Z_to_MMA2"].iloc[3] == pytest.approx(4.0 / desvio)
+
+
+def test_crie_distancia_padronizada_desvio_zero_vira_nan_e_nao_infinito():
+    """Distancia constante tem desvio 0; a divisao nao pode gerar infinito."""
+    df = pd.DataFrame({"%_to_MMA2": [3.0, 3.0, 3.0]})
+    resultado = technical.crie_distancia_padronizada(df, [2], 3)
+    assert math.isnan(resultado["Z_to_MMA2"].iloc[2])
+
+
+def test_crie_distancia_padronizada_preserva_as_colunas_percentuais():
+    """As colunas %_to_MMA{n} (base do %_to_MMA50_Categoria) nao sao tocadas."""
+    df = pd.DataFrame({"Close": [10.0, 12.0, 11.0, 15.0, 9.0, 13.0]})
+    technical.crie_medias_moveis(df, [2])
+    percentual_antes = df["%_to_MMA2"].copy()
+
+    resultado = technical.crie_distancia_padronizada(df, [2], 3)
+
+    pd.testing.assert_series_equal(resultado["%_to_MMA2"], percentual_antes)
+    assert "Z_to_MMA2" in resultado.columns
+
+
+def test_crie_distancia_padronizada_devolve_o_mesmo_dataframe():
+    df = pd.DataFrame({"%_to_MMA2": [1.0, 2.0, 3.0]})
+    assert technical.crie_distancia_padronizada(df, [2], 2) is df
+
+
+def test_janela_z_e_um_ano_de_pregoes():
+    assert config.Z_WINDOW == 252
 
 
 # --- T3: calcule_volatilidade_anualizada_std -------------------------------
@@ -282,6 +325,7 @@ def test_extrai_cotacoes_sucesso_enriquece_e_devolve_par(monkeypatch, ohlcv_fixt
     assert "Date" in df.columns
     assert "Return" in df.columns
     assert "MMA200" in df.columns
+    assert "Z_to_MMA200" in df.columns
     assert "vol_anualized_30days" in df.columns
     assert "Alto_volume_persistente" in df.columns
     assert "momentum_break_by_mslf" in df.columns
