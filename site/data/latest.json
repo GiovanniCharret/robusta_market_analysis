@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "2026-10-19T21-01-56Z",
-  "generated_at": "2026-10-19T21:01:56.731998+00:00",
+  "run_id": "2026-10-20T00-37-44Z",
+  "generated_at": "2026-10-20T00:37:44.842565+00:00",
   "robusta_version": "13",
   "input_universe": [
     "BOVA11",
@@ -2424,7 +2424,7 @@
       "res_min_by_mslf": 14.1,
       "res_med_by_mslf": 14.3,
       "res_max_by_mslf": 17.8,
-      "std_raking_value_by_mslf": 1.0,
+      "std_raking_value_by_mslf": 2.0,
       "momentum_break_by_mslf": 0,
       "pl": 32.74,
       "pvp": 1.29,
