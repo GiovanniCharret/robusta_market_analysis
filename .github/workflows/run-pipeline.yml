@@ -40,11 +40,14 @@ jobs:
       - name: Roda pipeline (--emit-latest)
         run: python -m robusta run --emit-latest site/data
 
-      - name: Commita latest.json + latest.xlsx (se mudou)
+      # O cache do Fundamentus tambem e commitado: sem isso, a raspagem do
+      # 1o dia util se perde com o runner e os dias seguintes voltam a ler
+      # a versao antiga do repo.
+      - name: Commita latest.json + latest.xlsx + cache de fundamentos (se mudou)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/data/latest.json site/data/latest.xlsx
+          git add site/data/latest.json site/data/latest.xlsx all_ticker_financial_indicators.xlsx
           if git diff --staged --quiet; then
             echo "Sem mudancas no payload; pulando commit."
           else
