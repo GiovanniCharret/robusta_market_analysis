@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "2026-11-20T02-34-36Z",
-  "generated_at": "2026-11-20T02:34:36.780028+00:00",
+  "run_id": "2026-11-20T20-39-37Z",
+  "generated_at": "2026-11-20T20:39:37.824706+00:00",
   "robusta_version": "13",
   "input_universe": [
     "BOVA11",
@@ -108,8 +108,8 @@
   "summary": {
     "tickers_ok": 100,
     "tickers_failed": 0,
-    "vol_media": 1.8677644975290164,
-    "vol_std": 10.151968637186073
+    "vol_media": 1.8678212447809617,
+    "vol_std": 10.152532658708044
   },
   "portfolio_signals": {
     "longs": [
@@ -3700,17 +3700,17 @@
       "fundamental_signal": -1.0,
       "vol_signal": -1,
       "posicao_setorial": "pior",
-      "preco": 16.799999237060547,
-      "vol_anualizada_30d": 101.75085317587691,
+      "preco": 15.0,
+      "vol_anualizada_30d": 101.75647115381946,
       "alto_vol_persistente": 0,
-      "mma9": 19.20254135131836,
-      "mma10": 18.37359228134155,
-      "mma26": 8.102307956952314,
-      "mma50": 4.356600138545036,
+      "mma9": 19.6255554623074,
+      "mma10": 18.782287216186525,
+      "mma26": 8.665384879479042,
+      "mma50": 4.651000138521194,
       "mma150": null,
       "mma200": null,
-      "pct_to_mma10": -8.564427794988102,
-      "pct_to_mma50": 285.621785401476,
+      "pct_to_mma10": -20.13752197829751,
+      "pct_to_mma50": 222.51127828969092,
       "z_to_mma10": null,
       "z_to_mma50": null,
       "sup_min_by_mslf": "Abismo",
@@ -3721,12 +3721,12 @@
       "res_max_by_mslf": "Foguete",
       "std_raking_value_by_mslf": 3.0,
       "momentum_break_by_mslf": 1,
-      "pl": -6.46,
-      "pvp": -15.56,
+      "pl": -5.77,
+      "pvp": -13.89,
       "ev_ebit": 16.51,
       "roic": 4.9,
       "cres_rec_5a": 0.9,
-      "div_liq_vm": 0.35,
+      "div_liq_vm": 0.39,
       "avaliacao_fundamentalista": 9.0,
       "distortion_ranking": 31.0
     },
