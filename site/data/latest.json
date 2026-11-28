@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "2026-11-27T21-33-56Z",
-  "generated_at": "2026-11-27T21:33:56.369862+00:00",
+  "run_id": "2026-11-28T00-01-28Z",
+  "generated_at": "2026-11-28T00:01:28.447655+00:00",
   "robusta_version": "13",
   "input_universe": [
     "BOVA11",
@@ -106,10 +106,10 @@
     "SAUD3"
   ],
   "summary": {
-    "tickers_ok": 99,
-    "tickers_failed": 1,
-    "vol_media": 1.8926794741682758,
-    "vol_std": 10.148494633125733
+    "tickers_ok": 100,
+    "tickers_failed": 0,
+    "vol_media": 1.892679474168276,
+    "vol_std": 10.148494633125734
   },
   "portfolio_signals": {
     "longs": [
@@ -658,6 +658,43 @@
       "div_liq_vm": -0.02,
       "avaliacao_fundamentalista": 20.0,
       "distortion_ranking": 49.0
+    },
+    "IBOV11": {
+      "ticker": "IBOV11",
+      "setor": null,
+      "subsetor": null,
+      "fundamental_signal": null,
+      "vol_signal": 0,
+      "posicao_setorial": null,
+      "preco": 177012.0,
+      "vol_anualizada_30d": null,
+      "alto_vol_persistente": 0,
+      "mma9": null,
+      "mma10": null,
+      "mma26": null,
+      "mma50": null,
+      "mma150": null,
+      "mma200": null,
+      "pct_to_mma10": null,
+      "pct_to_mma50": null,
+      "z_to_mma10": null,
+      "z_to_mma50": null,
+      "sup_min_by_mslf": "Abismo",
+      "sup_med_by_mslf": "Abismo",
+      "sup_max_by_mslf": "Abismo",
+      "res_min_by_mslf": "Foguete",
+      "res_med_by_mslf": "Foguete",
+      "res_max_by_mslf": "Foguete",
+      "std_raking_value_by_mslf": null,
+      "momentum_break_by_mslf": 1,
+      "pl": null,
+      "pvp": null,
+      "ev_ebit": null,
+      "roic": null,
+      "cres_rec_5a": null,
+      "div_liq_vm": null,
+      "avaliacao_fundamentalista": null,
+      "distortion_ranking": null
     },
     "PRIO3": {
       "ticker": "PRIO3",
@@ -3845,13 +3882,9 @@
   "warnings": [
     "BOVA11: sem dados fundamentalistas no merge",
     "SMAL11: sem dados fundamentalistas no merge",
+    "IBOV11: sem dados fundamentalistas no merge",
     "ROXO34: sem dados fundamentalistas no merge",
     "XPBR31: sem dados fundamentalistas no merge"
   ],
-  "failed_tickers": [
-    {
-      "ticker": "IBOV11",
-      "reason": "sem dados tecnicos ou baixa liquidez"
-    }
-  ]
+  "failed_tickers": []
 }
